@@ -11,7 +11,46 @@ from pydantic import BaseModel, Field
 from decimal import Decimal
 
 from database.connection import get_db_session
-from database.models import Transaction
+from database.models import Transaction, Check
+
+# Normalization helpers
+def normalize_source_type(added_via: Optional[str]) -> str:
+    """
+    Map legacy source/added_via values to AUTO|MANUAL
+    """
+    if not added_via:
+        return "MANUAL"
+    value = added_via.strip().lower()
+    if value in {"bot", "auto", "telegram", "userbot"}:
+        return "AUTO"
+    return "MANUAL"
+
+
+def normalize_transaction_type(raw: Optional[str]) -> str:
+    """
+    Map Russian / legacy transaction types to canonical enums
+    """
+    if not raw:
+        return "DEBIT"
+    upper = raw.upper()
+    if upper in {"DEBIT", "CREDIT", "CONVERSION", "REVERSAL"}:
+        return upper
+    mapping = {
+        "СПИСАНИЕ": "DEBIT",
+        "ПОПОЛНЕНИЕ": "CREDIT",
+        "ПОСТУПЛЕНИЕ": "CREDIT",
+        "КОНВЕРСИЯ": "CONVERSION",
+        "ОТМЕНА": "REVERSAL",
+        "OTMENA": "REVERSAL",
+    }
+    return mapping.get(upper, "DEBIT")
+
+
+def normalize_amount_for_response(amount: Decimal) -> str:
+    """
+    Present amount as positive string for UI
+    """
+    return f"{abs(Decimal(amount))}"
 
 router = APIRouter()
 
@@ -32,6 +71,7 @@ class TransactionResponse(BaseModel):
     parsing_confidence: Optional[float]
     is_p2p: Optional[bool] = None  # Not stored on Transaction yet
     created_at: datetime
+    updated_at: Optional[datetime] = None
     raw_message: Optional[str] = None
 
     class Config:
@@ -133,65 +173,65 @@ async def get_transactions(
     db: Session = Depends(get_db_session)
 ):
     """
-    Get paginated list of transactions with server-side filters and sorting.
+    Get paginated list of transactions (Checks) with server-side filters and sorting.
     """
-    query = db.query(Transaction)
+    query = db.query(Check)
 
     # Filters
     if date_from:
-        query = query.filter(Transaction.transaction_date >= date_from)
+        query = query.filter(Check.datetime >= date_from)
     if date_to:
-        query = query.filter(Transaction.transaction_date <= date_to)
+        query = query.filter(Check.datetime <= date_to)
     if operator:
-        query = query.filter(Transaction.operator_raw.ilike(f"%{operator}%"))
+        query = query.filter(Check.operator.ilike(f"%{operator}%"))
     operator_list = _split_csv(operators)
     if operator_list:
-        query = query.filter(Transaction.operator_raw.in_(operator_list))
+        query = query.filter(Check.operator.in_(operator_list))
     if app:
-        query = query.filter(Transaction.application_mapped.ilike(f"%{app}%"))
+        query = query.filter(Check.app.ilike(f"%{app}%"))
     app_list = _split_csv(apps)
     if app_list:
-        query = query.filter(Transaction.application_mapped.in_(app_list))
+        query = query.filter(Check.app.in_(app_list))
     if amount_min is not None:
-        query = query.filter(Transaction.amount >= amount_min)
+        query = query.filter(Check.amount >= amount_min)
     if amount_max is not None:
-        query = query.filter(Transaction.amount <= amount_max)
+        query = query.filter(Check.amount <= amount_max)
     if parsing_method:
-        if parsing_method.upper() == "REGEX":
-            query = query.filter(Transaction.parsing_method.ilike("REGEX%"))
-        else:
-            query = query.filter(Transaction.parsing_method == parsing_method)
-    if confidence_min is not None:
-        query = query.filter(Transaction.parsing_confidence >= confidence_min)
-    if confidence_max is not None:
-        query = query.filter(Transaction.parsing_confidence <= confidence_max)
+        query = query.filter(Check.added_via.ilike(f"%{parsing_method}%"))
     if search:
-        query = query.filter(Transaction.raw_message.ilike(f"%{search}%"))
+        query = query.filter(Check.raw_text.ilike(f"%{search}%"))
     if source_type:
-        query = query.filter(Transaction.source_type == source_type)
+        # map AUTO -> bot, MANUAL -> manual
+        if source_type == "AUTO":
+            query = query.filter(Check.added_via.ilike("%bot%"))
+        else:
+            query = query.filter(Check.added_via.ilike("%manual%"))
     if transaction_type:
-        query = query.filter(Transaction.transaction_type == transaction_type)
+        norm_type = normalize_transaction_type(transaction_type)
+        query = query.filter(Check.transaction_type == norm_type)
     tx_type_list = _split_csv(transaction_types)
     if tx_type_list:
-        query = query.filter(Transaction.transaction_type.in_(tx_type_list))
+        norm_list = [normalize_transaction_type(t) for t in tx_type_list]
+        query = query.filter(Check.transaction_type.in_(norm_list))
     if currency:
-        query = query.filter(Transaction.currency == currency)
+        query = query.filter(Check.currency == currency)
     if card:
-        query = query.filter(Transaction.card_last_4 == card)
+        query = query.filter(Check.card_last4 == card)
     dow_values = [int(x) for x in _split_csv(days_of_week) if x.isdigit()]
     if dow_values:
-        query = query.filter(extract("dow", Transaction.transaction_date).in_(dow_values))
+        query = query.filter(extract("dow", Check.datetime).in_(dow_values))
 
     total = query.count()
 
     # Sorting (whitelisted)
     sort_map: dict[str, Callable] = {
-        "transaction_date": Transaction.transaction_date,
-        "amount": Transaction.amount,
-        "created_at": Transaction.created_at,
-        "parsing_confidence": Transaction.parsing_confidence,
+        "transaction_date": Check.datetime,
+        "amount": Check.amount,
+        "created_at": Check.created_at,
+        "parsing_confidence": Check.metadata_json,  # placeholder for absence, fall back to created_at
+        "updated_at": Check.updated_at,
     }
-    sort_column = sort_map.get(sort_by, Transaction.transaction_date)
+    sort_column = sort_map.get(sort_by, Check.datetime)
     order_fn = desc if sort_dir.lower() == "desc" else asc
     query = query.order_by(order_fn(sort_column), Transaction.id.desc())
 
@@ -199,11 +239,36 @@ async def get_transactions(
     offset = (page - 1) * page_size
     rows = query.offset(offset).limit(page_size).all()
 
+    items: List[TransactionResponse] = []
+    for c in rows:
+        canonical_type = normalize_transaction_type(getattr(c, "transaction_type", None))
+        source_val = normalize_source_type(getattr(c, "added_via", None) or getattr(c, "source", None))
+        amount_val = normalize_amount_for_response(getattr(c, "amount", Decimal("0")))
+
+        items.append(TransactionResponse(
+            id=c.id,
+            transaction_date=c.datetime,
+            amount=amount_val,
+            currency=c.currency,
+            card_last_4=c.card_last4,
+            operator_raw=c.operator,
+            application_mapped=c.app,
+            transaction_type=canonical_type,
+            balance_after=str(c.balance) if c.balance is not None else None,
+            source_type=source_val,
+            parsing_method=getattr(c, "added_via", None),
+            parsing_confidence=None,
+            is_p2p=c.is_p2p,
+            created_at=c.created_at,
+            updated_at=getattr(c, "updated_at", None),
+            raw_message=getattr(c, "raw_text", None)
+        ))
+
     return TransactionListResponse(
         total=total,
         page=page,
         page_size=page_size,
-        items=rows
+        items=items
     )
 
 
@@ -213,12 +278,33 @@ async def get_transaction(
     db: Session = Depends(get_db_session)
 ):
     """Get single transaction by ID"""
-    transaction = db.query(Transaction).filter(Transaction.id == transaction_id).first()
+    c = db.query(Check).filter(Check.id == transaction_id).first()
 
-    if not transaction:
+    if not c:
         raise HTTPException(status_code=404, detail="Transaction not found")
 
-    return transaction
+    canonical_type = normalize_transaction_type(getattr(c, "transaction_type", None))
+    source_val = normalize_source_type(getattr(c, "added_via", None) or getattr(c, "source", None))
+    amount_val = normalize_amount_for_response(getattr(c, "amount", Decimal("0")))
+
+    return TransactionResponse(
+        id=c.id,
+        transaction_date=c.datetime,
+        amount=amount_val,
+        currency=c.currency,
+        card_last_4=c.card_last4,
+        operator_raw=c.operator,
+        application_mapped=c.app,
+        transaction_type=canonical_type,
+        balance_after=str(c.balance) if c.balance is not None else None,
+        source_type=source_val,
+        parsing_method=getattr(c, "added_via", None),
+        parsing_confidence=None,
+        is_p2p=c.is_p2p,
+        created_at=c.created_at,
+        updated_at=getattr(c, "updated_at", None),
+        raw_message=getattr(c, "raw_text", None)
+    )
 
 
 @router.put("/{transaction_id}", response_model=TransactionUpdateResponse)
@@ -231,34 +317,51 @@ async def update_transaction(
     Update a transaction by ID (partial updates supported).
     """
     try:
-        transaction = db.query(Transaction).filter(Transaction.id == transaction_id).first()
+        c = db.query(Check).filter(Check.id == transaction_id).first()
 
-        if not transaction:
+        if not c:
             raise HTTPException(status_code=404, detail=f"Transaction {transaction_id} not found")
 
         update_dict = update_data.model_dump(exclude_unset=True)
 
-        field_map = {
-            "transaction_date": "transaction_date",
-            "operator_raw": "operator_raw",
-            "application_mapped": "application_mapped",
-            "amount": "amount",
-            "balance_after": "balance_after",
-            "card_last_4": "card_last_4",
-            "transaction_type": "transaction_type",
-            "currency": "currency",
-            "source_type": "source_type",
-            "parsing_method": "parsing_method",
-            "parsing_confidence": "parsing_confidence",
-        }
+        # Normalize transaction type
+        if "transaction_type" in update_dict:
+            c.transaction_type = normalize_transaction_type(update_dict["transaction_type"])
 
-        for field, value in update_dict.items():
-            target_field = field_map.get(field)
-            if target_field is None:
-                continue
-            setattr(transaction, target_field, value)
+        # Normalize source_type -> added_via
+        if "source_type" in update_dict and update_dict["source_type"]:
+            src = update_dict["source_type"]
+            c.added_via = "bot" if src == "AUTO" else "manual"
 
-        transaction.updated_at = func.now()
+        if "transaction_date" in update_dict:
+            c.datetime = update_dict["transaction_date"]
+
+        if "operator_raw" in update_dict:
+            c.operator = update_dict["operator_raw"]
+
+        if "application_mapped" in update_dict:
+            c.app = update_dict["application_mapped"]
+
+        if "currency" in update_dict:
+            c.currency = update_dict["currency"]
+
+        if "card_last_4" in update_dict:
+            c.card_last4 = update_dict["card_last_4"]
+
+        if "is_p2p" in update_dict:
+            c.is_p2p = update_dict["is_p2p"]
+
+        if "balance_after" in update_dict:
+            c.balance = update_dict["balance_after"]
+
+        # Amount normalization: store debits as negative, credits/etc as positive
+        if "amount" in update_dict:
+            amt = Decimal(str(update_dict["amount"]))
+            txn_type = c.transaction_type or normalize_transaction_type(None)
+            store_amount = -abs(amt) if txn_type == "DEBIT" else abs(amt)
+            c.amount = store_amount
+
+        c.updated_at = func.now()
 
         db.commit()
         db.refresh(transaction)
@@ -266,7 +369,24 @@ async def update_transaction(
         return TransactionUpdateResponse(
             success=True,
             message="Transaction updated successfully",
-            transaction=transaction
+            transaction=TransactionResponse(
+                id=c.id,
+                transaction_date=c.datetime,
+                amount=normalize_amount_for_response(c.amount),
+                currency=c.currency,
+                card_last_4=c.card_last4,
+                operator_raw=c.operator,
+                application_mapped=c.app,
+                transaction_type=c.transaction_type,
+                balance_after=str(c.balance) if c.balance is not None else None,
+                source_type=normalize_source_type(c.added_via),
+                parsing_method=c.added_via,
+                parsing_confidence=None,
+                is_p2p=c.is_p2p,
+                created_at=c.created_at,
+                updated_at=c.updated_at,
+                raw_message=c.raw_text
+            )
         )
 
     except HTTPException:
