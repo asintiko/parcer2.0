@@ -29,7 +29,7 @@ auth_sessions: Dict[str, dict] = {}
 
 async def get_redis():
     """Get Redis client"""
-    return await aio    redis.from_url(REDIS_URL, decode_responses=True)
+    return await aioredis.from_url(REDIS_URL, decode_responses=True)
 
 
 def create_jwt_token(user_id: int, phone: str) -> str:

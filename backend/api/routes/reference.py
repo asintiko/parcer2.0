@@ -62,44 +62,40 @@ async def get_operators(
     db: Session = Depends(get_db_session)
 ):
     """Get paginated list of operators"""
-    try:
-        query = db.query(OperatorReference)
+    query = db.query(OperatorReference)
 
-        # Apply filters
-        if search:
-            search_pattern = f"%{search}%"
-            query = query.filter(
-                or_(
-                    OperatorReference.operator_name.ilike(search_pattern),
-                    OperatorReference.application_name.ilike(search_pattern)
-                )
+    # Apply filters
+    if search:
+        search_pattern = f"%{search}%"
+        query = query.filter(
+            or_(
+                OperatorReference.operator_name.ilike(search_pattern),
+                OperatorReference.application_name.ilike(search_pattern)
             )
-
-        if application:
-            query = query.filter(OperatorReference.application_name == application)
-
-        if is_p2p is not None:
-            query = query.filter(OperatorReference.is_p2p == is_p2p)
-
-        if is_active is not None:
-            query = query.filter(OperatorReference.is_active == is_active)
-
-        # Get total count
-        total = query.count()
-
-        # Apply pagination
-        offset = (page - 1) * page_size
-        items = query.order_by(desc(OperatorReference.id)).offset(offset).limit(page_size).all()
-
-        return OperatorReferenceListResponse(
-            total=total,
-            page=page,
-            page_size=page_size,
-            items=items
         )
 
-    finally:
-        db.close()
+    if application:
+        query = query.filter(OperatorReference.application_name == application)
+
+    if is_p2p is not None:
+        query = query.filter(OperatorReference.is_p2p == is_p2p)
+
+    if is_active is not None:
+        query = query.filter(OperatorReference.is_active == is_active)
+
+    # Get total count
+    total = query.count()
+
+    # Apply pagination
+    offset = (page - 1) * page_size
+    items = query.order_by(desc(OperatorReference.id)).offset(offset).limit(page_size).all()
+
+    return OperatorReferenceListResponse(
+        total=total,
+        page=page,
+        page_size=page_size,
+        items=items
+    )
 
 
 @router.post("/", response_model=OperatorReferenceResponse)
@@ -124,9 +120,12 @@ async def create_operator(
         db.refresh(new_operator)
 
         return new_operator
-
-    finally:
-        db.close()
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to create operator: {e}")
 
 
 @router.put("/{operator_id}", response_model=OperatorReferenceResponse)
@@ -151,9 +150,12 @@ async def update_operator(
         db.refresh(db_operator)
 
         return db_operator
-
-    finally:
-        db.close()
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to update operator: {e}")
 
 
 @router.delete("/{operator_id}")
@@ -172,56 +174,55 @@ async def delete_operator(
         db.commit()
 
         return {"message": "Operator deleted successfully"}
-
-    finally:
-        db.close()
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to delete operator: {e}")
 
 
 @router.get("/export/excel")
 async def export_to_excel(db: Session = Depends(get_db_session)):
     """Export operators to Excel file"""
-    try:
-        # Get all active operators
-        operators = db.query(OperatorReference).filter(
-            OperatorReference.is_active == True
-        ).order_by(OperatorReference.application_name, OperatorReference.operator_name).all()
+    # Get all active operators
+    operators = db.query(OperatorReference).filter(
+        OperatorReference.is_active == True
+    ).order_by(OperatorReference.application_name, OperatorReference.operator_name).all()
 
-        # Create workbook
-        wb = openpyxl.Workbook()
-        ws = wb.active
-        ws.title = "Операторы"
+    # Create workbook
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Операторы"
 
-        # Headers
-        headers = ["Оператор/Продавец", "Приложение"]
-        ws.append(headers)
+    # Headers
+    headers = ["Оператор/Продавец", "Приложение"]
+    ws.append(headers)
 
-        # Style headers
-        for cell in ws[1]:
-            cell.font = Font(bold=True)
-            cell.fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
-            cell.font = Font(color="FFFFFF", bold=True)
+    # Style headers
+    for cell in ws[1]:
+        cell.font = Font(bold=True)
+        cell.fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+        cell.font = Font(color="FFFFFF", bold=True)
 
-        # Add data
-        for op in operators:
-            ws.append([op.operator_name, op.application_name])
+    # Add data
+    for op in operators:
+        ws.append([op.operator_name, op.application_name])
 
-        # Adjust column widths
-        ws.column_dimensions['A'].width = 50
-        ws.column_dimensions['B'].width = 20
+    # Adjust column widths
+    ws.column_dimensions['A'].width = 50
+    ws.column_dimensions['B'].width = 20
 
-        # Save to BytesIO
-        output = BytesIO()
-        wb.save(output)
-        output.seek(0)
+    # Save to BytesIO
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
 
-        return StreamingResponse(
-            output,
-            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            headers={"Content-Disposition": "attachment; filename=operators.xlsx"}
-        )
-
-    finally:
-        db.close()
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=operators.xlsx"}
+    )
 
 
 @router.post("/import/excel")
@@ -282,18 +283,12 @@ async def import_from_excel(
         }
 
     except Exception as e:
+        db.rollback()
         raise HTTPException(status_code=400, detail=f"Import failed: {str(e)}")
-
-    finally:
-        db.close()
 
 
 @router.get("/applications")
 async def get_applications(db: Session = Depends(get_db_session)):
     """Get list of unique application names"""
-    try:
-        apps = db.query(OperatorReference.application_name).distinct().order_by(OperatorReference.application_name).all()
-        return [app[0] for app in apps]
-
-    finally:
-        db.close()
+    apps = db.query(OperatorReference.application_name).distinct().order_by(OperatorReference.application_name).all()
+    return [app[0] for app in apps]

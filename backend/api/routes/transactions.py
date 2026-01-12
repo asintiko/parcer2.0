@@ -135,80 +135,76 @@ async def get_transactions(
     """
     Get paginated list of transactions with server-side filters and sorting.
     """
-    try:
-        query = db.query(Transaction)
+    query = db.query(Transaction)
 
-        # Filters
-        if date_from:
-            query = query.filter(Transaction.transaction_date >= date_from)
-        if date_to:
-            query = query.filter(Transaction.transaction_date <= date_to)
-        if operator:
-            query = query.filter(Transaction.operator_raw.ilike(f"%{operator}%"))
-        operator_list = _split_csv(operators)
-        if operator_list:
-            query = query.filter(Transaction.operator_raw.in_(operator_list))
-        if app:
-            query = query.filter(Transaction.application_mapped.ilike(f"%{app}%"))
-        app_list = _split_csv(apps)
-        if app_list:
-            query = query.filter(Transaction.application_mapped.in_(app_list))
-        if amount_min is not None:
-            query = query.filter(Transaction.amount >= amount_min)
-        if amount_max is not None:
-            query = query.filter(Transaction.amount <= amount_max)
+    # Filters
+    if date_from:
+        query = query.filter(Transaction.transaction_date >= date_from)
+    if date_to:
+        query = query.filter(Transaction.transaction_date <= date_to)
+    if operator:
+        query = query.filter(Transaction.operator_raw.ilike(f"%{operator}%"))
+    operator_list = _split_csv(operators)
+    if operator_list:
+        query = query.filter(Transaction.operator_raw.in_(operator_list))
+    if app:
+        query = query.filter(Transaction.application_mapped.ilike(f"%{app}%"))
+    app_list = _split_csv(apps)
+    if app_list:
+        query = query.filter(Transaction.application_mapped.in_(app_list))
+    if amount_min is not None:
+        query = query.filter(Transaction.amount >= amount_min)
+    if amount_max is not None:
+        query = query.filter(Transaction.amount <= amount_max)
     if parsing_method:
         if parsing_method.upper() == "REGEX":
             query = query.filter(Transaction.parsing_method.ilike("REGEX%"))
         else:
             query = query.filter(Transaction.parsing_method == parsing_method)
-        if confidence_min is not None:
-            query = query.filter(Transaction.parsing_confidence >= confidence_min)
-        if confidence_max is not None:
-            query = query.filter(Transaction.parsing_confidence <= confidence_max)
-        if search:
-            query = query.filter(Transaction.raw_message.ilike(f"%{search}%"))
-        if source_type:
-            query = query.filter(Transaction.source_type == source_type)
-        if transaction_type:
-            query = query.filter(Transaction.transaction_type == transaction_type)
-        tx_type_list = _split_csv(transaction_types)
-        if tx_type_list:
-            query = query.filter(Transaction.transaction_type.in_(tx_type_list))
-        if currency:
-            query = query.filter(Transaction.currency == currency)
-        if card:
-            query = query.filter(Transaction.card_last_4 == card)
-        dow_values = [int(x) for x in _split_csv(days_of_week) if x.isdigit()]
-        if dow_values:
-            query = query.filter(extract("dow", Transaction.transaction_date).in_(dow_values))
+    if confidence_min is not None:
+        query = query.filter(Transaction.parsing_confidence >= confidence_min)
+    if confidence_max is not None:
+        query = query.filter(Transaction.parsing_confidence <= confidence_max)
+    if search:
+        query = query.filter(Transaction.raw_message.ilike(f"%{search}%"))
+    if source_type:
+        query = query.filter(Transaction.source_type == source_type)
+    if transaction_type:
+        query = query.filter(Transaction.transaction_type == transaction_type)
+    tx_type_list = _split_csv(transaction_types)
+    if tx_type_list:
+        query = query.filter(Transaction.transaction_type.in_(tx_type_list))
+    if currency:
+        query = query.filter(Transaction.currency == currency)
+    if card:
+        query = query.filter(Transaction.card_last_4 == card)
+    dow_values = [int(x) for x in _split_csv(days_of_week) if x.isdigit()]
+    if dow_values:
+        query = query.filter(extract("dow", Transaction.transaction_date).in_(dow_values))
 
-        total = query.count()
+    total = query.count()
 
-        # Sorting (whitelisted)
-        sort_map: dict[str, Callable] = {
-            "transaction_date": Transaction.transaction_date,
-            "amount": Transaction.amount,
-            "created_at": Transaction.created_at,
-            "parsing_confidence": Transaction.parsing_confidence,
-        }
-        sort_column = sort_map.get(sort_by, Transaction.transaction_date)
-        order_fn = desc if sort_dir.lower() == "desc" else asc
-        query = query.order_by(order_fn(sort_column), Transaction.id.desc())
+    # Sorting (whitelisted)
+    sort_map: dict[str, Callable] = {
+        "transaction_date": Transaction.transaction_date,
+        "amount": Transaction.amount,
+        "created_at": Transaction.created_at,
+        "parsing_confidence": Transaction.parsing_confidence,
+    }
+    sort_column = sort_map.get(sort_by, Transaction.transaction_date)
+    order_fn = desc if sort_dir.lower() == "desc" else asc
+    query = query.order_by(order_fn(sort_column), Transaction.id.desc())
 
-        # Pagination
-        offset = (page - 1) * page_size
-        rows = query.offset(offset).limit(page_size).all()
+    # Pagination
+    offset = (page - 1) * page_size
+    rows = query.offset(offset).limit(page_size).all()
 
-        return TransactionListResponse(
-            total=total,
-            page=page,
-            page_size=page_size,
-            items=rows
-        )
-
-    finally:
-        db.close()
+    return TransactionListResponse(
+        total=total,
+        page=page,
+        page_size=page_size,
+        items=rows
+    )
 
 
 @router.get("/{transaction_id}", response_model=TransactionResponse)
@@ -217,15 +213,12 @@ async def get_transaction(
     db: Session = Depends(get_db_session)
 ):
     """Get single transaction by ID"""
-    try:
-        transaction = db.query(Transaction).filter(Transaction.id == transaction_id).first()
+    transaction = db.query(Transaction).filter(Transaction.id == transaction_id).first()
 
-        if not transaction:
-            raise HTTPException(status_code=404, detail="Transaction not found")
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Transaction not found")
 
-        return transaction
-    finally:
-        db.close()
+    return transaction
 
 
 @router.put("/{transaction_id}", response_model=TransactionUpdateResponse)
@@ -282,8 +275,6 @@ async def update_transaction(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Update failed: {str(e)}")
-    finally:
-        db.close()
 
 
 @router.delete("/{transaction_id}", response_model=DeleteResponse)
@@ -315,8 +306,6 @@ async def delete_transaction(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Delete failed: {str(e)}")
-    finally:
-        db.close()
 
 
 @router.post("/bulk-delete", response_model=BulkDeleteResponse)
@@ -357,5 +346,3 @@ async def bulk_delete_transactions(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Bulk delete failed: {str(e)}")
-    finally:
-        db.close()

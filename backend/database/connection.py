@@ -57,9 +57,9 @@ def get_db_session() -> Session:
     """
     db = SessionLocal()
     try:
-        return db
+        yield db
     finally:
-        pass  # Session will be closed by FastAPI
+        db.close()
 
 
 def init_db():

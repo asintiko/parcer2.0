@@ -197,14 +197,16 @@ async def analyze_with_ai(
 
 
 async def process_transactions_batch(
-    db: Session,
-    transactions: List[Check],
+    transaction_ids: List[int],
     task_id: str
 ):
     """Process batch of transactions with AI analysis"""
 
-    # Get existing applications
-    existing_apps = get_existing_applications(db)
+    from database.connection import get_db
+
+    with get_db() as db:
+        transactions = db.query(Check).filter(Check.id.in_(transaction_ids)).order_by(Check.datetime.desc()).all()
+        existing_apps = get_existing_applications(db)
 
     total = len(transactions)
     processed = 0
@@ -307,6 +309,7 @@ async def analyze_transactions(
     query = query.order_by(Check.datetime.desc()).limit(request.limit)
 
     transactions = query.all()
+    transaction_ids = [t.id for t in transactions]
 
     if not transactions:
         raise HTTPException(status_code=404, detail="No transactions found for analysis")
@@ -323,7 +326,7 @@ async def analyze_transactions(
     }
 
     # Start background processing
-    background_tasks.add_task(process_transactions_batch, db, transactions, task_id)
+    background_tasks.add_task(process_transactions_batch, transaction_ids, task_id)
 
     return AnalyzeResponse(
         task_id=task_id,
