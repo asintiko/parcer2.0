@@ -119,6 +119,20 @@ export interface BulkDeleteResponse {
     errors: string[];
 }
 
+export interface BulkUpdatePayload {
+    updates: Array<{
+        id: number;
+        fields: Record<string, any>;
+    }>;
+}
+
+export interface BulkUpdateResponse {
+    success: boolean;
+    updated_count: number;
+    failed_ids: number[];
+    errors: string[];
+}
+
 export interface TopAgentResponse {
     period_start: string;
     period_end: string;
@@ -198,6 +212,11 @@ export const transactionsApi = {
 
     bulkDeleteTransactions: async (ids: number[]): Promise<BulkDeleteResponse> => {
         const response = await apiClient.post<BulkDeleteResponse>('/api/transactions/bulk-delete', { ids });
+        return response.data;
+    },
+
+    bulkUpdateTransactions: async (payload: BulkUpdatePayload): Promise<BulkUpdateResponse> => {
+        const response = await apiClient.patch<BulkUpdateResponse>('/api/transactions/bulk-update', payload);
         return response.data;
     },
 };

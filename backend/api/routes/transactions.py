@@ -140,6 +140,113 @@ class BulkDeleteResponse(BaseModel):
     errors: List[str] = []
 
 
+class BulkUpdateItem(BaseModel):
+    id: int
+    fields: dict
+
+
+class BulkUpdateRequest(BaseModel):
+    updates: List[BulkUpdateItem] = Field(..., min_items=1, max_items=500)
+
+
+class BulkUpdateResponse(BaseModel):
+    success: bool
+    updated_count: int
+    failed_ids: List[int]
+    errors: List[str]
+
+
+@router.patch("/bulk-update", response_model=BulkUpdateResponse)
+async def bulk_update_transactions(
+    request: BulkUpdateRequest,
+    db: Session = Depends(get_db_session)
+):
+    """
+    Apply multiple updates in one request.
+    """
+    allowed_fields = {
+        "transaction_date",
+        "operator_raw",
+        "application_mapped",
+        "amount",
+        "balance_after",
+        "card_last_4",
+        "transaction_type",
+        "currency",
+        "source_type",
+        "is_p2p",
+    }
+
+    failed_ids: List[int] = []
+    errors: List[str] = []
+    updated_count = 0
+
+    try:
+        for item in request.updates:
+            c = db.query(Check).filter(Check.id == item.id).first()
+            if not c:
+                failed_ids.append(item.id)
+                errors.append(f"ID {item.id} not found")
+                continue
+
+            fields = item.fields
+            # reject unknown fields
+            for key in list(fields.keys()):
+                if key not in allowed_fields:
+                    fields.pop(key, None)
+
+            # Normalize fields
+            if "transaction_type" in fields:
+                c.transaction_type = normalize_transaction_type(fields["transaction_type"])
+
+            if "source_type" in fields:
+                src = fields["source_type"]
+                c.added_via = "bot" if src == "AUTO" else "manual"
+
+            if "transaction_date" in fields:
+                c.datetime = fields["transaction_date"]
+
+            if "operator_raw" in fields:
+                c.operator = fields["operator_raw"]
+
+            if "application_mapped" in fields:
+                c.app = fields["application_mapped"]
+
+            if "currency" in fields:
+                c.currency = fields["currency"]
+
+            if "card_last_4" in fields:
+                c.card_last4 = fields["card_last_4"]
+
+            if "is_p2p" in fields:
+                c.is_p2p = fields["is_p2p"]
+
+            if "balance_after" in fields:
+                c.balance = fields["balance_after"]
+
+            if "amount" in fields:
+                amt = Decimal(str(fields["amount"]))
+                txn_type = c.transaction_type or normalize_transaction_type(None)
+                store_amount = -abs(amt) if txn_type == "DEBIT" else abs(amt)
+                c.amount = store_amount
+
+            c.updated_at = func.now()
+            updated_count += 1
+
+        db.commit()
+
+        return BulkUpdateResponse(
+            success=len(failed_ids) == 0,
+            updated_count=updated_count,
+            failed_ids=failed_ids,
+            errors=errors
+        )
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Bulk update failed: {str(e)}")
+
+
 def _split_csv(values: Optional[str]) -> List[str]:
     if not values:
         return []
@@ -437,30 +544,18 @@ async def bulk_delete_transactions(
     Delete multiple transactions at once
     """
     try:
-        deleted_count = 0
-        failed_ids = []
-        errors = []
+        ids = request.ids
+        existing_ids = set(id_ for (id_,) in db.query(Check.id).filter(Check.id.in_(ids)).all())
+        failed_ids = [i for i in ids if i not in existing_ids]
 
-        for transaction_id in request.ids:
-            try:
-                transaction = db.query(Transaction).filter(Transaction.id == transaction_id).first()
-                if transaction:
-                    db.delete(transaction)
-                    deleted_count += 1
-                else:
-                    failed_ids.append(transaction_id)
-                    errors.append(f"ID {transaction_id} not found")
-            except Exception as e:
-                failed_ids.append(transaction_id)
-                errors.append(f"ID {transaction_id}: {str(e)}")
-
+        deleted_count = db.query(Check).filter(Check.id.in_(existing_ids)).delete(synchronize_session=False)
         db.commit()
 
         return BulkDeleteResponse(
             success=len(failed_ids) == 0,
             deleted_count=deleted_count,
             failed_ids=failed_ids,
-            errors=errors
+            errors=[f"ID {fid} not found" for fid in failed_ids]
         )
 
     except Exception as e:

@@ -890,9 +890,8 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({ data, total,
             const anchorRowIndex = data.indexOf(anchorRow);
             const anchorColIndex = table.getVisibleLeafColumns().findIndex(c => c.id === anchorColId);
 
-            const pasteActions: Array<{ rowId: number; columnId: string; oldValue: any; newValue: any }> = [];
+            const updates: Record<number, Record<string, any>> = {};
 
-            // Apply paste with offset
             for (let i = 0; i < rows.length; i++) {
                 const targetRowIndex = anchorRowIndex + i;
                 if (targetRowIndex >= data.length) break;
@@ -905,7 +904,6 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({ data, total,
                     if (targetColIndex >= columns.length) break;
 
                     const targetCol = columns[targetColIndex];
-                    // Skip non-editable columns
                     if (targetCol.id === 'row_number' || targetCol.id === 'day') continue;
 
                     const newValue = rows[i][j];
@@ -913,25 +911,28 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({ data, total,
                     const oldValue = (targetRow as any)[field];
 
                     if (newValue !== String(oldValue)) {
-                        await saveEdit(targetRow.id, targetCol.id, newValue);
-                        pasteActions.push({
-                            rowId: targetRow.id,
-                            columnId: targetCol.id,
-                            oldValue,
-                            newValue,
-                        });
+                        if (!updates[targetRow.id]) updates[targetRow.id] = {};
+                        updates[targetRow.id][field] = newValue;
                     }
                 }
             }
 
-            if (pasteActions.length > 0) {
-                addAction({ type: 'PASTE', cells: pasteActions });
-                showToast('success', `Вставлено ${pasteActions.length} значений`);
-            }
+            const payload = {
+                updates: Object.entries(updates).map(([id, fields]) => ({
+                    id: Number(id),
+                    fields,
+                })),
+            };
+
+            if (payload.updates.length === 0) return;
+
+            await transactionsApi.bulkUpdateTransactions(payload);
+            addAction({ type: 'PASTE', cells: [] });
+            showToast('success', `Вставлено ${payload.updates.length} строк`);
         } catch (error) {
             showToast('error', 'Не удалось вставить из буфера обмена');
         }
-    }, [selectedCells, data, table, saveEdit, addAction, showToast, fieldMap]);
+    }, [selectedCells, data, table, addAction, showToast, fieldMap]);
 
     const handleDeleteSelected = useCallback(async () => {
         if (selectedCells.size === 0) return;
