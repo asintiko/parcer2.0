@@ -240,7 +240,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({ data, total,
     // Selection State
     const [selectedCells, setSelectedCells] = useState<Set<string>>(new Set()); // Set of "rowId:colId"
     const [isSelecting, setIsSelecting] = useState(false);
-    const [selectionStart, setSelectionStart] = useState<{ rowId: string; colId: string; rowIndex: number; colIndex: number } | null>(null);
+    const [selectionStart, setSelectionStart] = useState<{ rowId: string; colId: string; rowPos: number; colPos: number } | null>(null);
     const [detailRow, setDetailRow] = useState<Transaction | null>(null);
 
     // Context Menu State
@@ -560,6 +560,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({ data, total,
             columnOrder,
             pagination: paginationState,
         },
+        getRowId: (row) => String(row.id),
         manualPagination: true,
         manualSorting: true,
         manualFiltering: true,
@@ -666,7 +667,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({ data, total,
         return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
     }, []);
 
-    const handleCellMouseDown = (e: React.MouseEvent, rowId: string, colId: string, rowIndex: number, colIndex: number) => {
+    const handleCellMouseDown = (e: React.MouseEvent, rowId: string, colId: string, rowPos: number, colPos: number) => {
         // Left click only
         if (e.button !== 0) return;
 
@@ -674,18 +675,18 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({ data, total,
         if (e.ctrlKey || e.metaKey) return;
 
         setIsSelecting(true);
-        setSelectionStart({ rowId, colId, rowIndex, colIndex });
+        setSelectionStart({ rowId, colId, rowPos, colPos });
         setSelectedCells(new Set([`${rowId}:${colId}`]));
     };
 
-    const handleCellMouseEnter = (rowIndex: number, colIndex: number) => {
+    const handleCellMouseEnter = (rowPos: number, colPos: number) => {
         if (!isSelecting || !selectionStart) return;
 
-        const startRow = Math.min(selectionStart.rowIndex, rowIndex);
-        const endRow = Math.max(selectionStart.rowIndex, rowIndex);
+        const startRow = Math.min(selectionStart.rowPos, rowPos);
+        const endRow = Math.max(selectionStart.rowPos, rowPos);
 
-        const startColIdx = Math.min(selectionStart.colIndex, colIndex);
-        const endColIdx = Math.max(selectionStart.colIndex, colIndex);
+        const startColIdx = Math.min(selectionStart.colPos, colPos);
+        const endColIdx = Math.max(selectionStart.colPos, colPos);
 
         // Get visible columns based on current order
         const visibleColumns = table.getVisibleLeafColumns();
@@ -1304,8 +1305,8 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({ data, total,
                                                     style={finalStyle}
                                                     className={`cursor-default select-none border border-table-border px-2 text-table-text ${densityClasses[density]} ${isSelected ? 'ring-2 ring-inset ring-primary z-10 bg-table-row-selected' : ''}`}
                                                     onClick={(e) => handleCellClick(e, cellKey)}
-                                                    onMouseDown={(e) => handleCellMouseDown(e, row.id, cell.column.id, row.index, colIndex)}
-                                                    onMouseEnter={() => handleCellMouseEnter(row.index, colIndex)}
+                                                    onMouseDown={(e) => handleCellMouseDown(e, row.id, cell.column.id, virtualRow.index, colIndex)}
+                                                    onMouseEnter={() => handleCellMouseEnter(virtualRow.index, colIndex)}
                                                     onContextMenu={(e) => handleCellContextMenu(e, cellKey)}
                                                 >
                                                     {isDetailsCell ? (
