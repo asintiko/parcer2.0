@@ -12,7 +12,6 @@ import {
     SortingState,
     ColumnFiltersState,
     ColumnOrderState,
-    Row,
     Header,
     PaginationState,
 } from '@tanstack/react-table';
@@ -29,7 +28,7 @@ import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useToast } from './Toast';
 import { transactionsApi } from '../services/api';
 import { useTableViewPresets, type TableViewState } from '../hooks/useTableViewPresets';
-import * as XLSX from 'xlsx';
+import { exportTransactionsToExcel } from '../services/excelExport';
 
 // DnD Imports
 import {
@@ -56,6 +55,11 @@ interface TransactionTableProps {
     page: number;
     pageSize: number;
     isLoading?: boolean;
+    exportViewRows?: Transaction[];
+    exportAllRows?: Transaction[];
+    onTransactionsUpdated?: (txs: Transaction[]) => void;
+    onTransactionsDeleted?: (ids: number[]) => void;
+    onTransactionsFieldsUpdated?: (updates: Array<{ id: number; fields: Record<string, any> }>) => void;
     onQueryChange: (query: Partial<{
         search: string;
         filters: ActiveFilters;
@@ -71,20 +75,9 @@ type Alignment = 'left' | 'center' | 'right';
 interface CellStyle {
     backgroundColor?: string;
     textAlign?: Alignment;
+    fontWeight?: 'normal' | 'bold';
 }
 
-const DAY_LABELS = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
-const TRANSACTION_TYPE_LABELS: Record<string, string> = {
-    DEBIT: 'Списание',
-    CREDIT: 'Пополнение',
-    CONVERSION: 'Конверсия',
-    REVERSAL: 'Отмена',
-};
-const SOURCE_TYPE_LABELS: Record<string, string> = {
-    AUTO: 'Авто',
-    MANUAL: 'Ручной',
-};
-const EMPTY_VALUE = '—';
 const ROW_HEIGHT_BY_DENSITY: Record<'compact' | 'standard' | 'comfortable', number> = {
     compact: 28,
     standard: 40,
@@ -166,7 +159,21 @@ const DraggableTableHeader = ({
 };
 
 
-export const TransactionTable: React.FC<TransactionTableProps> = ({ data, total, page, pageSize, isLoading, onQueryChange, onPageChange, onPageSizeChange }) => {
+export const TransactionTable: React.FC<TransactionTableProps> = ({
+    data,
+    total,
+    page,
+    pageSize,
+    isLoading,
+    exportViewRows,
+    exportAllRows,
+    onTransactionsUpdated,
+    onTransactionsDeleted,
+    onTransactionsFieldsUpdated,
+    onQueryChange,
+    onPageChange,
+    onPageSizeChange,
+}) => {
     const [sorting, setSorting] = useState<SortingState>([{ id: 'transaction_date', desc: true }]);
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
     const [columnOrder, setColumnOrder] = useState<ColumnOrderState>([]);
@@ -178,6 +185,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({ data, total,
     const [searchValue, setSearchValue] = useState('');
     const [density, setDensity] = useState<'compact' | 'standard' | 'comfortable'>('standard');
     const [viewMenuOpen, setViewMenuOpen] = useState(false);
+    const [exportMenuOpen, setExportMenuOpen] = useState(false);
     const [presetName, setPresetName] = useState('');
 
     // Advanced Filters State
@@ -263,7 +271,13 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({ data, total,
     const { showToast } = useToast();
 
     // Inline Editing Hooks
-    const { editingCell, startEdit, cancelEdit, saveEdit: originalSaveEdit, isSaving } = useInlineEdit();
+    const { editingCell, startEdit, cancelEdit, saveEdit: originalSaveEdit, isSaving } = useInlineEdit({
+        onSuccess: ({ updated }) => {
+            if (updated && onTransactionsUpdated) {
+                onTransactionsUpdated([updated]);
+            }
+        },
+    });
     const { presets, defaultPreset, savePreset, deletePreset, renamePreset, setDefaultPreset, getPreset } = useTableViewPresets();
 
     const captureCurrentViewState = useCallback((): TableViewState => ({
@@ -308,9 +322,11 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({ data, total,
                 await originalSaveEdit(action.rowId, action.columnId, action.newValue);
             } else if (action.type === 'DELETE') {
                 await transactionsApi.deleteTransaction(action.rowId);
+                onTransactionsDeleted?.([action.rowId]);
             } else if (action.type === 'BULK_DELETE') {
                 const ids = action.rows.map(r => r.rowId);
                 await transactionsApi.bulkDeleteTransactions(ids);
+                onTransactionsDeleted?.(ids);
             }
         },
     });
@@ -881,48 +897,6 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({ data, total,
         setContextMenu(null);
     };
 
-    const formatExportValue = (row: Row<Transaction>, columnId: string) => {
-        const value = row.getValue(columnId);
-        if (value === null || value === undefined) return '';
-
-        if (columnId === 'date_time' && value instanceof Date) {
-            return formatDateTime(value);
-        }
-        if (columnId === 'transaction_date' && value instanceof Date) {
-            return formatDate(value);
-        }
-        if (columnId === 'time' && value instanceof Date) {
-            return formatTime(value);
-        }
-        if (columnId === 'day' && value instanceof Date) {
-            return DAY_LABELS[value.getDay()] || '';
-        }
-        if (columnId === 'amount') {
-            const numeric = parseFloat(String(value));
-            if (Number.isNaN(numeric)) return '';
-            return Math.abs(numeric).toFixed(2).replace('.', ',');
-        }
-        if (columnId === 'balance_after') {
-            const numeric = parseFloat(String(value));
-            if (Number.isNaN(numeric)) return EMPTY_VALUE;
-            return Math.abs(numeric).toFixed(2).replace('.', ',');
-        }
-        if (columnId === 'is_p2p') {
-            return value ? '1' : '';
-        }
-        if (columnId === 'transaction_type') {
-            return TRANSACTION_TYPE_LABELS[String(value)] || String(value);
-        }
-        if (columnId === 'source_type') {
-            return SOURCE_TYPE_LABELS[String(value)] || String(value);
-        }
-        if (columnId === 'operator_raw' || columnId === 'application_mapped' || columnId === 'card_last_4') {
-            return String(value || EMPTY_VALUE);
-        }
-
-        return String(value);
-    };
-
     // Copy/Paste/Delete Handlers
     const fieldMap: Record<string, string> = useMemo(() => ({
         date_time: 'transaction_date',
@@ -1037,11 +1011,12 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({ data, total,
 
             await transactionsApi.bulkUpdateTransactions(payload);
             addAction({ type: 'PASTE', cells: [] });
+            onTransactionsFieldsUpdated?.(payload.updates);
             showToast('success', `Вставлено ${payload.updates.length} строк`);
         } catch (error) {
             showToast('error', 'Не удалось вставить из буфера обмена');
         }
-    }, [selectedCells, data, table, addAction, showToast, fieldMap]);
+    }, [selectedCells, data, table, addAction, showToast, fieldMap, onTransactionsFieldsUpdated]);
 
     const handleDeleteSelected = useCallback(async () => {
         if (selectedCells.size === 0) return;
@@ -1066,13 +1041,14 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({ data, total,
                 return { rowId: id, rowData: row };
             });
             addAction({ type: 'BULK_DELETE', rows: deletedRows });
+            onTransactionsDeleted?.(idsArray);
 
             setSelectedCells(new Set());
             showToast('success', `Удалено ${idsArray.length} записей`);
         } catch (error) {
             showToast('error', 'Ошибка при удалении');
         }
-    }, [selectedCells, data, addAction, showToast]);
+    }, [selectedCells, data, addAction, showToast, onTransactionsDeleted]);
 
     // Keyboard Shortcuts
     useKeyboardShortcuts({
@@ -1090,38 +1066,50 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({ data, total,
         enabled: true,
     });
 
-    const handleExport = () => {
-        const rows = table.getPrePaginationRowModel().rows;
-        if (!rows.length) {
+    const buildExportColumns = useCallback(() => {
+        const columnsToExport = table.getVisibleLeafColumns().filter(col => col.id !== 'details');
+        return columnsToExport.map((column) => {
+            const header = column.columnDef.header;
+            return {
+                id: column.id,
+                header: typeof header === 'string' ? header : column.id,
+                widthPx: columnSizing[column.id] || column.getSize(),
+                textAlign: (columnStyles[column.id]?.textAlign as Alignment) || undefined,
+            };
+        });
+    }, [table, columnSizing, columnStyles]);
+
+    const exportCurrentView = useCallback(() => {
+        const rowsToUse = exportViewRows || table.getPrePaginationRowModel().rows.map(r => r.original);
+        if (!rowsToUse.length) {
             alert('Нет данных для экспорта.');
             return;
         }
-
-        const columnsToExport = table.getVisibleLeafColumns();
-        const date = new Date().toISOString().slice(0, 10);
-
-        const headerRow = columnsToExport.map((column) => {
-            const header = column.columnDef.header;
-            return typeof header === 'string' ? header : column.id;
+        exportTransactionsToExcel({
+            rows: rowsToUse,
+            columns: buildExportColumns(),
+            columnStyles: columnStyles as any,
+            cellStyles: cellStyles as any,
+            fileName: `transactions_view_${new Date().toISOString().slice(0, 10)}.xlsx`,
+            includeAlternating: true,
         });
-        const dataRows = rows.map((row) =>
-            columnsToExport.map((column) => formatExportValue(row, column.id))
-        );
+    }, [exportViewRows, table, columnStyles, cellStyles, buildExportColumns]);
 
-        const worksheet = XLSX.utils.aoa_to_sheet([headerRow, ...dataRows]);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'Транзакции');
-        const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-        const blob = new Blob([buffer], {
-            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    const exportAll = useCallback(() => {
+        const rowsToUse = exportAllRows || exportViewRows || table.getPrePaginationRowModel().rows.map(r => r.original);
+        if (!rowsToUse.length) {
+            alert('Нет данных для экспорта.');
+            return;
+        }
+        exportTransactionsToExcel({
+            rows: rowsToUse,
+            columns: buildExportColumns(),
+            columnStyles: columnStyles as any,
+            cellStyles: cellStyles as any,
+            fileName: `transactions_all_${new Date().toISOString().slice(0, 10)}.xlsx`,
+            includeAlternating: true,
         });
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `transactions_${date}.xlsx`;
-        link.click();
-        window.URL.revokeObjectURL(url);
-    };
+    }, [exportAllRows, exportViewRows, table, columnStyles, cellStyles, buildExportColumns]);
 
     if (isLoading) {
         return (
@@ -1215,13 +1203,31 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({ data, total,
 
             {/* Toolbar */}
             <div className="flex items-center gap-2 mb-4">
-                <button
-                    onClick={handleExport}
-                    className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-foreground bg-surface border border-border rounded hover:bg-surface-2 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-                >
-                    <FileText className="w-4 h-4" />
-                    Файл
-                </button>
+                <div className="relative">
+                    <button
+                        onClick={() => setExportMenuOpen(prev => !prev)}
+                        className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-foreground bg-surface border border-border rounded hover:bg-surface-2 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                    >
+                        <FileText className="w-4 h-4" />
+                        Экспорт
+                    </button>
+                    {exportMenuOpen && (
+                        <div className="absolute top-full left-0 mt-1 w-52 bg-surface border border-border rounded-md shadow-lg z-50">
+                            <button
+                                onClick={() => { exportCurrentView(); setExportMenuOpen(false); }}
+                                className="w-full text-left px-3 py-2 text-sm hover:bg-surface-2"
+                            >
+                                Экспорт текущего вида
+                            </button>
+                            <button
+                                onClick={() => { exportAll(); setExportMenuOpen(false); }}
+                                className="w-full text-left px-3 py-2 text-sm hover:bg-surface-2"
+                            >
+                                Экспорт всех транзакций
+                            </button>
+                        </div>
+                    )}
+                </div>
                 <button
                     onClick={() => setFilterDrawerOpen(true)}
                     className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium border rounded hover:bg-surface-2 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary ${activeFilterCount > 0 ? 'bg-primary-light text-primary border-primary/30' : 'text-foreground bg-surface border-border'}`}

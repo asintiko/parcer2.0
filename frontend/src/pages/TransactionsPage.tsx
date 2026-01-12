@@ -1,11 +1,11 @@
 /**
  * Transactions Page Component
- * Uses server-side pagination/filtering/sorting to reduce frontend workload
+ * Offline-first: loads from IndexedDB, manual sync to server, local filtering/sorting/pagination
  */
-import { useCallback, useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { transactionsApi, TransactionsQueryParams, TransactionListResponse } from '../services/api';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Transaction } from '../services/api';
 import { TransactionTable } from '../components/TransactionTable';
+import { useOfflineTransactions } from '../hooks/useOfflineTransactions';
 
 type SortState = { sort_by: string; sort_dir: 'asc' | 'desc' };
 
@@ -36,37 +36,116 @@ export function TransactionsPage() {
     const [sort, setSort] = useState<SortState>({ sort_by: 'transaction_date', sort_dir: 'desc' });
     const [filters, setFilters] = useState<FiltersState>({ currency: 'UZS' });
 
-    const queryKey = useMemo(() => ['transactions', page, pageSize, sort, filters], [page, pageSize, sort, filters]);
+    const {
+        data,
+        isLoading: offlineLoading,
+        isOfflineReady,
+        syncProgress,
+        syncFromServer,
+        upsertTransactions,
+        removeTransactions,
+        updateTransactionFields,
+        lastSyncAt,
+    } = useOfflineTransactions();
 
-    const { data, isLoading } = useQuery<TransactionListResponse>({
-        queryKey,
-        queryFn: () => {
-            const params: TransactionsQueryParams = {
-                page,
-                page_size: pageSize,
-                sort_by: sort.sort_by,
-                sort_dir: sort.sort_dir,
-                search: filters.search,
-                date_from: filters.dateFrom,
-                date_to: filters.dateTo,
-                operators: filters.operators,
-                apps: filters.apps,
-                amount_min: filters.amountMin,
-                amount_max: filters.amountMax,
-                parsing_method: filters.parsing_method,
-                confidence_min: filters.confidence_min,
-                confidence_max: filters.confidence_max,
-                source_type: filters.source_type,
-                transaction_type: filters.transaction_type,
-                transaction_types: filters.transaction_types,
-                currency: filters.currency,
-                card: filters.card,
-                days_of_week: filters.days_of_week,
-            };
-            return transactionsApi.getTransactions(params);
-        },
-        refetchInterval: 30000,
-    });
+    const filteredData = useMemo(() => {
+        const search = (filters.search || '').trim().toLowerCase();
+        const parsingMethod = filters.parsing_method || filters.parsingMethod;
+        const confidenceMax = filters.confidence_max ?? (filters.lowConfidence ? 0.6 : undefined);
+
+        return data.filter((tx: Transaction) => {
+            const txDate = tx.transaction_date ? new Date(tx.transaction_date) : null;
+
+            if (filters.currency && tx.currency !== filters.currency) return false;
+            if (filters.dateFrom && txDate && txDate < new Date(filters.dateFrom)) return false;
+            if (filters.dateTo && txDate && txDate > new Date(filters.dateTo)) return false;
+
+            if (filters.days_of_week?.length && txDate) {
+                const dayIdx = txDate.getDay();
+                if (!filters.days_of_week.includes(dayIdx)) return false;
+            }
+
+            const amount = tx.amount ? Math.abs(parseFloat(tx.amount)) : undefined;
+            if (filters.amountMin && amount !== undefined && !Number.isNaN(amount) && amount < parseFloat(filters.amountMin)) return false;
+            if (filters.amountMax && amount !== undefined && !Number.isNaN(amount) && amount > parseFloat(filters.amountMax)) return false;
+
+            if (filters.operators?.length) {
+                const op = (tx.operator_raw || '').toLowerCase();
+                if (!filters.operators.some((o) => op.includes(o.toLowerCase()))) return false;
+            }
+
+            if (filters.apps?.length) {
+                const app = (tx.application_mapped || '').toLowerCase();
+                if (!filters.apps.some((a) => app.includes(a.toLowerCase()))) return false;
+            }
+
+            if (filters.transaction_type && tx.transaction_type !== filters.transaction_type) return false;
+            if (filters.transaction_types?.length && !filters.transaction_types.includes(tx.transaction_type)) return false;
+            if (filters.source_type && tx.source_type !== filters.source_type) return false;
+            if (filters.card && tx.card_last_4 && tx.card_last_4 !== filters.card) return false;
+
+            if (parsingMethod) {
+                if (!tx.parsing_method) return false;
+                if (tx.parsing_method.toUpperCase() !== parsingMethod.toUpperCase()) return false;
+            }
+            if (confidenceMax !== undefined && tx.parsing_confidence !== null && tx.parsing_confidence !== undefined && tx.parsing_confidence > confidenceMax) return false;
+            if (filters.lowConfidence && (tx.parsing_confidence ?? 1) >= (confidenceMax ?? 0.6)) return false;
+
+            if (search) {
+                const blob = `${tx.operator_raw || ''} ${tx.application_mapped || ''} ${tx.raw_message || ''} ${tx.amount || ''} ${tx.currency || ''}`.toLowerCase();
+                if (!blob.includes(search)) return false;
+            }
+
+            return true;
+        });
+    }, [data, filters]);
+
+    const sortComparator = useCallback((key: string | undefined, dir: 'asc' | 'desc') => {
+        const sortKey = key || 'transaction_date';
+        const dirMultiplier = dir === 'asc' ? 1 : -1;
+        const getValue = (tx: Transaction) => {
+            const value = (tx as any)[sortKey];
+            if (sortKey.includes('date')) {
+                return value ? new Date(value).getTime() : 0;
+            }
+            if (sortKey === 'amount' || sortKey === 'balance_after') {
+                const num = parseFloat(value ?? '0');
+                return Number.isNaN(num) ? 0 : num;
+            }
+            if (typeof value === 'string') return value.toLowerCase();
+            return value ?? '';
+        };
+        return (a: Transaction, b: Transaction) => {
+            const av = getValue(a);
+            const bv = getValue(b);
+            if (av < bv) return -1 * dirMultiplier;
+            if (av > bv) return 1 * dirMultiplier;
+            return 0;
+        };
+    }, [sort.sort_by, sort.sort_dir]);
+
+    const sortedData = useMemo(() => {
+        return [...filteredData].sort(sortComparator(sort.sort_by, sort.sort_dir));
+    }, [filteredData, sort.sort_by, sort.sort_dir, sortComparator]);
+
+    const allSortedData = useMemo(() => {
+        return [...data].sort(sortComparator(sort.sort_by, sort.sort_dir));
+    }, [data, sort.sort_by, sort.sort_dir, sortComparator]);
+
+    const total = sortedData.length;
+
+    useEffect(() => {
+        const maxPage = Math.max(1, Math.ceil(total / pageSize));
+        if (page > maxPage) {
+            setPage(maxPage);
+        }
+    }, [page, pageSize, total]);
+
+    const paginatedItems = useMemo(() => {
+        const start = (page - 1) * pageSize;
+        const end = start + pageSize;
+        return sortedData.slice(start, end);
+    }, [sortedData, page, pageSize]);
 
     const handleQueryChange = useCallback((next: Partial<FiltersState> & { sort_by?: string; sort_dir?: 'asc' | 'desc'; search?: string; filters?: any }) => {
         if (next.sort_by || next.sort_dir) {
@@ -76,8 +155,11 @@ export function TransactionsPage() {
             });
         }
 
-        const { sort_by, sort_dir, filters: incomingFilters, ...rest } = next;
+        const { filters: incomingFilters, ...rest } = next;
         const updatedFilters: FiltersState = { ...rest };
+        if (next.search !== undefined) {
+            updatedFilters.search = next.search;
+        }
 
         if (incomingFilters) {
             updatedFilters.dateFrom = incomingFilters.dateFrom || undefined;
@@ -114,27 +196,57 @@ export function TransactionsPage() {
         setPage(1);
     }, []);
 
+    const handleTransactionsUpdated = useCallback((txs: Transaction[]) => {
+        upsertTransactions(txs);
+    }, [upsertTransactions]);
+
+    const handleTransactionsDeleted = useCallback((ids: number[]) => {
+        removeTransactions(ids);
+    }, [removeTransactions]);
+
+    const handleTransactionsFieldsUpdated = useCallback((updates: Array<{ id: number; fields: Record<string, any> }>) => {
+        updateTransactionFields(updates);
+    }, [updateTransactionFields]);
+
     return (
         <div className="h-full flex flex-col bg-bg">
             <div className="flex-1 overflow-hidden p-4">
                 <div className="h-full flex flex-col bg-surface border border-table-border rounded-lg shadow-sm">
                     <div className="flex-1 overflow-hidden p-0">
+                        <div className="flex items-center justify-between px-4 py-2 border-b border-table-border bg-surface-2">
+                            <div className="text-sm text-foreground-secondary">
+                                {isOfflineReady ? 'Локальный кеш загружен' : 'Кеш отсутствует, выполняется синхронизация'}
+                                {lastSyncAt ? ` · Последняя синхронизация: ${new Date(lastSyncAt).toLocaleString()}` : ''}
+                            </div>
+                            <button
+                                onClick={() => syncFromServer()}
+                                disabled={offlineLoading || syncProgress.status === 'running'}
+                                className="px-3 py-1.5 text-sm font-medium text-foreground bg-surface border border-border rounded hover:bg-surface-2 disabled:opacity-60"
+                            >
+                                {syncProgress.status === 'running'
+                                    ? `Синхронизация... (${syncProgress.downloaded} записей)`
+                                    : 'Синхронизировать'}
+                            </button>
+                        </div>
                         <TransactionTable
-                            data={data?.items || []}
-                            total={data?.total || 0}
+                            data={paginatedItems}
+                            total={total}
                             page={page}
                             pageSize={pageSize}
-                            isLoading={isLoading}
+                            isLoading={offlineLoading && !isOfflineReady}
+                            exportViewRows={sortedData}
+                            exportAllRows={allSortedData}
+                            onTransactionsUpdated={handleTransactionsUpdated}
+                            onTransactionsDeleted={handleTransactionsDeleted}
+                            onTransactionsFieldsUpdated={handleTransactionsFieldsUpdated}
                             onQueryChange={handleQueryChange}
                             onPageChange={handlePageChange}
                             onPageSizeChange={handlePageSizeChange}
                         />
                     </div>
-                    {data && (
-                        <div className="px-4 py-2 border-t border-table-border text-xs text-foreground-secondary bg-surface-2">
-                            Всего записей: {data.total}
-                        </div>
-                    )}
+                    <div className="px-4 py-2 border-t border-table-border text-xs text-foreground-secondary bg-surface-2">
+                        Всего записей: {total}
+                    </div>
                 </div>
             </div>
         </div>

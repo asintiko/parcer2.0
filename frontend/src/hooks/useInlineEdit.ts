@@ -9,8 +9,8 @@ export interface EditingCell {
 }
 
 export interface UseInlineEditOptions {
-    onSuccess?: (rowId: number, columnId: string) => void;
-    onError?: (error: Error, rowId: number, columnId: string) => void;
+    onSuccess?: (params: { rowId: number; columnId: string; updated?: Transaction }) => void;
+    onError?: (params: { error: Error; rowId: number; columnId: string }) => void;
 }
 
 export const useInlineEdit = (options?: UseInlineEditOptions) => {
@@ -21,14 +21,22 @@ export const useInlineEdit = (options?: UseInlineEditOptions) => {
     const updateMutation = useMutation({
         mutationFn: ({ id, data }: { id: number; data: TransactionUpdateRequest }) =>
             transactionsApi.updateTransaction(id, data),
-        onSuccess: (_, variables) => {
+        onSuccess: (response, variables) => {
             queryClient.invalidateQueries({ queryKey: ['transactions'] });
             showToast('success', 'Изменения сохранены');
-            options?.onSuccess?.(variables.id, Object.keys(variables.data)[0]);
+            options?.onSuccess?.({
+                rowId: variables.id,
+                columnId: Object.keys(variables.data)[0],
+                updated: response.transaction,
+            });
         },
         onError: (error: Error, variables) => {
             showToast('error', `Ошибка сохранения: ${error.message}`);
-            options?.onError?.(error, variables.id, Object.keys(variables.data)[0]);
+            options?.onError?.({
+                error,
+                rowId: variables.id,
+                columnId: Object.keys(variables.data)[0],
+            });
         },
     });
 
