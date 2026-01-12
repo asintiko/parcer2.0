@@ -1,0 +1,81 @@
+@import './styles/theme.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .text-table-xs {
+    @apply text-xs leading-4 tracking-wide;
+  }
+}
+
+/* Excel-like Table Styles */
+.strict-table {
+  @apply w-full border-collapse text-left text-sm whitespace-nowrap;
+}
+
+.strict-table th {
+  @apply bg-table-header font-semibold text-table-text border border-table-border px-2 py-1 select-none relative;
+}
+
+.strict-table td {
+  @apply border border-table-border px-2 py-1 text-table-text;
+}
+
+/* Row Hover */
+.strict-table tr:hover td {
+  @apply bg-table-row-hover;
+}
+
+/* Selected Row */
+.strict-table tr td.selected {
+  @apply bg-table-row-selected;
+}
+
+/* Resize Handle */
+.resizer {
+  @apply absolute right-0 top-0 h-full w-1 cursor-col-resize select-none touch-none bg-transparent hover:bg-primary opacity-0 bg-opacity-50 z-10;
+}
+
+.resizer.isResizing {
+  @apply bg-primary opacity-100;
+}
+
+.strict-table th:hover .resizer {
+  @apply opacity-50;
+}
+
+/* Filter Drawer Utilities */
+.input-base {
+  @apply w-full px-3 py-2 border border-input-border rounded-md focus:ring-1 focus:ring-primary focus:border-input-border-focus outline-none text-sm transition-shadow bg-input-bg text-input-text placeholder:text-input-placeholder;
+}
+
+.section-title {
+  @apply text-xs font-bold text-foreground-muted uppercase tracking-wider mb-2;
+}
+
+/* Toast Animation */
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}
+
+.custom-checkbox {
+  @apply rounded text-primary focus:ring-primary border-border;
+}
+
+/* Dragging state */
+.is-dragging {
+  @apply opacity-50 bg-surface-2 border-2 border-dashed border-border;
+}

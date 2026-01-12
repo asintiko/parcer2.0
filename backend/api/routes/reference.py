@@ -1,0 +1,299 @@
+"""
+Operator Reference API routes
+CRUD operations for operator/seller reference dictionary
+"""
+from fastapi import APIRouter, Depends, Query, HTTPException, UploadFile, File
+from fastapi.responses import StreamingResponse
+from sqlalchemy.orm import Session
+from sqlalchemy import desc, or_
+from typing import List, Optional
+from pydantic import BaseModel
+from io import BytesIO
+import openpyxl
+from openpyxl.styles import Font, PatternFill
+
+from database.connection import get_db_session
+from database.models import OperatorReference
+
+router = APIRouter()
+
+
+# Pydantic schemas
+class OperatorReferenceResponse(BaseModel):
+    id: int
+    operator_name: str
+    application_name: str
+    is_p2p: bool
+    is_active: bool
+
+    class Config:
+        from_attributes = True
+
+
+class OperatorReferenceCreate(BaseModel):
+    operator_name: str
+    application_name: str
+    is_p2p: bool = True
+    is_active: bool = True
+
+
+class OperatorReferenceUpdate(BaseModel):
+    operator_name: Optional[str] = None
+    application_name: Optional[str] = None
+    is_p2p: Optional[bool] = None
+    is_active: Optional[bool] = None
+
+
+class OperatorReferenceListResponse(BaseModel):
+    total: int
+    page: int
+    page_size: int
+    items: List[OperatorReferenceResponse]
+
+
+@router.get("/", response_model=OperatorReferenceListResponse)
+async def get_operators(
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(50, ge=1, le=500, description="Items per page"),
+    search: Optional[str] = Query(None, description="Search in operator or app name"),
+    application: Optional[str] = Query(None, description="Filter by application"),
+    is_p2p: Optional[bool] = Query(None, description="Filter by P2P status"),
+    is_active: Optional[bool] = Query(True, description="Filter by active status"),
+    db: Session = Depends(get_db_session)
+):
+    """Get paginated list of operators"""
+    try:
+        query = db.query(OperatorReference)
+
+        # Apply filters
+        if search:
+            search_pattern = f"%{search}%"
+            query = query.filter(
+                or_(
+                    OperatorReference.operator_name.ilike(search_pattern),
+                    OperatorReference.application_name.ilike(search_pattern)
+                )
+            )
+
+        if application:
+            query = query.filter(OperatorReference.application_name == application)
+
+        if is_p2p is not None:
+            query = query.filter(OperatorReference.is_p2p == is_p2p)
+
+        if is_active is not None:
+            query = query.filter(OperatorReference.is_active == is_active)
+
+        # Get total count
+        total = query.count()
+
+        # Apply pagination
+        offset = (page - 1) * page_size
+        items = query.order_by(desc(OperatorReference.id)).offset(offset).limit(page_size).all()
+
+        return OperatorReferenceListResponse(
+            total=total,
+            page=page,
+            page_size=page_size,
+            items=items
+        )
+
+    finally:
+        db.close()
+
+
+@router.post("/", response_model=OperatorReferenceResponse)
+async def create_operator(
+    operator: OperatorReferenceCreate,
+    db: Session = Depends(get_db_session)
+):
+    """Create new operator reference"""
+    try:
+        # Check for duplicates
+        existing = db.query(OperatorReference).filter(
+            OperatorReference.operator_name == operator.operator_name,
+            OperatorReference.application_name == operator.application_name
+        ).first()
+
+        if existing:
+            raise HTTPException(status_code=400, detail="Operator already exists")
+
+        new_operator = OperatorReference(**operator.dict())
+        db.add(new_operator)
+        db.commit()
+        db.refresh(new_operator)
+
+        return new_operator
+
+    finally:
+        db.close()
+
+
+@router.put("/{operator_id}", response_model=OperatorReferenceResponse)
+async def update_operator(
+    operator_id: int,
+    operator: OperatorReferenceUpdate,
+    db: Session = Depends(get_db_session)
+):
+    """Update operator reference"""
+    try:
+        db_operator = db.query(OperatorReference).filter(OperatorReference.id == operator_id).first()
+
+        if not db_operator:
+            raise HTTPException(status_code=404, detail="Operator not found")
+
+        # Update fields
+        update_data = operator.dict(exclude_unset=True)
+        for key, value in update_data.items():
+            setattr(db_operator, key, value)
+
+        db.commit()
+        db.refresh(db_operator)
+
+        return db_operator
+
+    finally:
+        db.close()
+
+
+@router.delete("/{operator_id}")
+async def delete_operator(
+    operator_id: int,
+    db: Session = Depends(get_db_session)
+):
+    """Delete operator reference"""
+    try:
+        db_operator = db.query(OperatorReference).filter(OperatorReference.id == operator_id).first()
+
+        if not db_operator:
+            raise HTTPException(status_code=404, detail="Operator not found")
+
+        db.delete(db_operator)
+        db.commit()
+
+        return {"message": "Operator deleted successfully"}
+
+    finally:
+        db.close()
+
+
+@router.get("/export/excel")
+async def export_to_excel(db: Session = Depends(get_db_session)):
+    """Export operators to Excel file"""
+    try:
+        # Get all active operators
+        operators = db.query(OperatorReference).filter(
+            OperatorReference.is_active == True
+        ).order_by(OperatorReference.application_name, OperatorReference.operator_name).all()
+
+        # Create workbook
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Операторы"
+
+        # Headers
+        headers = ["Оператор/Продавец", "Приложение"]
+        ws.append(headers)
+
+        # Style headers
+        for cell in ws[1]:
+            cell.font = Font(bold=True)
+            cell.fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+            cell.font = Font(color="FFFFFF", bold=True)
+
+        # Add data
+        for op in operators:
+            ws.append([op.operator_name, op.application_name])
+
+        # Adjust column widths
+        ws.column_dimensions['A'].width = 50
+        ws.column_dimensions['B'].width = 20
+
+        # Save to BytesIO
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+
+        return StreamingResponse(
+            output,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": "attachment; filename=operators.xlsx"}
+        )
+
+    finally:
+        db.close()
+
+
+@router.post("/import/excel")
+async def import_from_excel(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db_session)
+):
+    """Import operators from Excel file"""
+    try:
+        # Read Excel file
+        contents = await file.read()
+        wb = openpyxl.load_workbook(BytesIO(contents))
+        ws = wb.active
+
+        imported = 0
+        skipped = 0
+        errors = []
+
+        # Skip header row
+        for row_idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
+            if not row or not row[0]:
+                continue
+
+            operator_name = str(row[0]).strip() if row[0] else None
+            application_name = str(row[1]).strip() if row[1] else None
+
+            if not operator_name or not application_name:
+                errors.append(f"Row {row_idx}: Missing operator or application name")
+                skipped += 1
+                continue
+
+            # Check if exists
+            existing = db.query(OperatorReference).filter(
+                OperatorReference.operator_name == operator_name,
+                OperatorReference.application_name == application_name
+            ).first()
+
+            if existing:
+                skipped += 1
+                continue
+
+            # Create new record
+            new_operator = OperatorReference(
+                operator_name=operator_name,
+                application_name=application_name,
+                is_p2p=True,
+                is_active=True
+            )
+            db.add(new_operator)
+            imported += 1
+
+        db.commit()
+
+        return {
+            "imported": imported,
+            "skipped": skipped,
+            "errors": errors
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Import failed: {str(e)}")
+
+    finally:
+        db.close()
+
+
+@router.get("/applications")
+async def get_applications(db: Session = Depends(get_db_session)):
+    """Get list of unique application names"""
+    try:
+        apps = db.query(OperatorReference.application_name).distinct().order_by(OperatorReference.application_name).all()
+        return [app[0] for app in apps]
+
+    finally:
+        db.close()

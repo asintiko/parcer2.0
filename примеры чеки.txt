@@ -1,0 +1,584 @@
+
+ℹ️ Счет по карте изменен
+💸 6.935.000,00 UZS
+💳 HUMO-CARD *6714
+🕘 17:46 04.04.2025
+
+💸 Оплата
+➖ 6.000.000,00 UZS
+📍 NBU P2P HUMO UZCARD>
+💳 HUMOCARD *6714
+🕓 18:46 04.04.2025
+💰 935.000,40 UZS
+
+💸 Оплата
+➖ 400.000,00 UZS
+📍 OQ P2P>TASHKENT
+💳 HUMOCARD *6714
+🕓 12:58 05.04.2025
+💰 535.000,40 UZS
+
+💸 Оплата
+➖ 5.000,40 UZS
+📍 OAJ OZBEKTELEKOM AK
+💳 HUMOCARD *6714
+🕓 17:39 05.04.2025
+💰 530.000,00 UZS
+
+💸 Оплата
+➖ 200.000,00 UZS
+📍 SQB MOBILE HUMO P2P
+💳 HUMOCARD *6714
+🕓 13:18 06.04.2025
+💰 330.000,00 UZS
+
+🎉 Пополнение
+➕ 11.488.000,00 UZS
+📍 ELEKSIR S03 T19 SHL
+💳 HUMOCARD *6714
+🕓 23:00 06.04.2025
+💰 11.818.000,00 UZS
+
+Pokupka: OOO "AGAT SYSTEM", tashkent, g tashkent Ul Gavhar 151 02.04.25 08:37 karta ***0907. summa:44000.00 UZS, balans:2607792.14 UZS
+
+Pokupka: XK FAMILY SHOP, TOSHKENT, QORASU 2 MAVZE 15 UY 36 XONADON 02.04.25 11:48 karta ***0907. summa:80000.00 UZS, balans:2527792.14 UZS
+
+OTMENA Pokupka: XK FAMILY SHOP, UZ,02.04.25 11:50,karta ***0907. summa:100000.00 UZS balans:2527792.14 UZS
+
+Pokupka: XK FAMILY SHOP, TOSHKENT, QORASU 2 MAVZE 15 UY 36 XONADON 02.04.25 11:51 karta ***0907. summa:100000.00 UZS, balans:2427792.14 UZS
+
+Pokupka: XK FAMILY SHOP, TOSHKENT, QORASU 2 MAVZE 15 UY 36 XONADON 02.04.25 11:50 karta ***0907. summa:100000.00 UZS, balans:2427792.14 UZS
+
+Spisanie c karty: HAMKORBANK ATB, UZ,02.04.25 14:52,karta ***4862. summa:50000.00 UZS balans:138715.26 UZS
+
+Popolnenie scheta: MILLIY BANK PK KIRIM, UZ,02.04.25 16:19,karta ***5982. summa:2319680.00 UZS balans:7098248.40 UZS
+
+Popolnenie scheta: MILLIY BANK PK KIRIM, UZ,02.04.25 17:14,karta ***0907. summa:677040.00 UZS balans:3104832.14 UZS
+
+Popolnenie scheta: MILLIY BANK PK KIRIM, UZ,02.04.25 18:36,karta ***5982. summa:677040.00 UZS balans:7775288.40 UZS
+
+Schet po karte HUMOCARD *6921 izmenen na summu 2052200.14 UZS. 01-APR-2025 00:00
+
+HUMOCARD *6921: oplata 200000.00 UZS; SmartBank P2P HUMO U; 25-04-02 15:33;  Dostupno: 1852200.28 UZS
+
+HUMOCARD *6921: oplata 200000.00 UZS; HAMKOR P2P UZKARD>AN; 25-04-03 13:10;  Dostupno: 1652200.28 UZS
+
+HUMOCARD *6921: operacija 745800.00 UZS; HAMKOR HUMO P2P>Andi; 25-04-03 17:59;  Dostupno: 906400.28 UZS
+
+HUMOCARD *6921: operacija 745800.00 UZS; HAMKOR HUMO P2P>Andi; 25-04-03 18:02;  Dostupno: 160600.28 UZS
+
+HUMOCARD *6921: operacija 2300.00 UZS; TBC HUMO P2P>TASHKEN; 25-04-04 10:19;  Dostupno: 158300.28 UZS
+
+HUMOCARD *2529: popolnenie 2300.00 UZS; TBC HUMO P2P>TASHKEN; 25-04-04 10:19;  Dostupno: 4500.00 UZS
+
+Schet po karte HUMO-CARD *6714 izmenen na summu 6935000.00 UZS. 04-APR-2025 17:46
+
+HUMOCARD *6714: oplata 6000000.00 UZS; NBU P2P HUMO UZCARD>; 25-04-04 18:46;  Dostupno: 935000.40 UZS
+
+HUMOCARD *6714: oplata 400000.00 UZS; OQ P2P>TASHKENT; 25-04-05 12:58;  Dostupno: 535000.40 UZS
+
+HUMOCARD *6714: oplata 5000.40 UZS; OAJ OZBEKTELEKOM AK; 25-04-05 17:39;  Dostupno: 530000.00 UZS
+
+HUMOCARD *6714: oplata 200000.00 UZS; SQB MOBILE HUMO P2P; 25-04-06 13:18;  Dostupno: 330000.00 UZS
+
+HUMOCARD *6714: popolnenie 11488000.00 UZS; ELEKSIR S03 T19 SHL; 25-04-06 23:00;  Dostupno: 11818000.00 UZS
+
+Spisanie c karty: UZCARD OTHERS 2 ANY PAYNET, 99,14.04.25 21:52,karta ***4862. summa:351750.00 UZS balans:6532215.26 UZS
+
+E-Com oplata: PAYME OPLATA, UZ,14.04.25 23:11,karta ***4862. summa:40000.00 UZS balans:6492215.26 UZS
+
+Platezh: SHTRAF I GOSUSLUGI, UZ,15.04.25 12:15,karta ***0907. summa:85000.00 UZS balans:3176266.14 UZS
+
+Pokupka: FATH OIL PETROL, 206, KHONChORBOG MFY, MEVAZOR, 2 TOR 15.04.25 12:52 karta ***4862. summa:625000.00 UZS, balans:5867215.26 UZS
+
+HUMOCARD *6714: oplata 40000.00 UZS; PL HUMANS OPLATA>TOS; 25-04-15 15:33;  Dostupno: 407712.00 UZS
+
+HUMOCARD *6921: oplata 8300.28 UZS; OAJ OZBEKTELEKOM AK; 25-04-16 09:27;  Dostupno: 0.00 UZS
+
+HUMOCARD *6714: oplata 130000.00 UZS; NBU ONLINE KONVERSIY; 25-04-16 13:59;  Dostupno: 277712.00 UZS
+
+NBU Card, [14.04.2025 10:30]
+💸 Конверсия
+➖ 37.00 USD
+💳 479091**6905
+🕓 14.04.25 10:29
+💵 0.00 USD
+
+NBU Card, [14.04.2025 10:32]
+💸 Конверсия
+➖ 50.92 USD
+💳 479091**2266
+🕓 14.04.25 10:31
+💵 0.00 USD
+
+NBU Card, [14.04.2025 10:40]
+💸 Конверсия
+➖ 1 100.90 USD
+💳 532154**1744
+🕓 14.04.25 10:39
+💵 1 505.00 USD
+
+CardXabar, [14.04.2025 21:52]
+🔴 Spisanie c karty
+➖ 351 750.00 UZS
+💳 ***4862
+📍 UZCARD OTHERS 2 ANY PAYNET, 99
+🕓 14.04.25 21:52
+💵 6 532 215.26 UZS
+
+CardXabar, [14.04.2025 23:11]
+🔴 E-Com oplata
+➖ 40 000.00 UZS
+💳 ***4862
+📍 PAYME OPLATA, UZ
+🕓 14.04.25 23:11
+💵 6 492 215.26 UZS
+
+CardXabar, [15.04.2025 12:52]
+🔴 Pokupka
+➖ 625 000.00 UZS
+💳 ***4862
+📍 FATH OIL PETROL, 206, KHONChORBOG MFY, MEVAZOR, 2 TOR 
+🕓 15.04.25 12:52
+💵 5 867 215.26 UZS
+
+HUMO Card, [14.04.2025 12:01]
+💸 Оплата
+➖ 10.035.000,00 UZS
+📍 ChakanaPay Humo Uzca
+💳 HUMOCARD *6714
+🕓 12:01 14.04.2025
+💰 3.547.712,00 UZS
+
+HUMO Card, [14.04.2025 12:07]
+💸 Оплата
+➖ 3.000.000,00 UZS
+📍 TENGE24 WS P2P H2UEW
+💳 HUMOCARD *6714
+🕓 12:06 14.04.2025
+💰 547.712,00 UZS
+
+HUMO Card, [14.04.2025 23:02]
+💸 Оплата
+➖ 100.000,00 UZS
+📍 XAZNA PAYNET TOLOV>T
+💳 HUMOCARD *6714
+🕓 23:02 14.04.2025
+💰 447.712,00 UZS
+
+HUMO Card, [15.04.2025 15:34]
+💸 Оплата
+➖ 40.000,00 UZS
+📍 PL HUMANS OPLATA>TOS
+💳 HUMOCARD *6714
+🕓 15:33 15.04.2025
+💰 407.712,00 UZS
+
+🔴 Pokupka
+➖ 44 000.00 UZS
+💳 ***0907
+📍 OOO "AGAT SYSTEM", tashkent, g tashkent  Ul  Gavhar 151 
+🕓 02.04.25 08:37
+💵 2 607 792.14 UZS
+
+🔴 Pokupka
+➖ 80 000.00 UZS
+💳 ***0907
+📍 XK FAMILY SHOP, TOSHKENT, QORASU 2 MAVZE 15 UY 36 XONADON 
+🕓 02.04.25 11:48
+💵 2 527 792.14 UZS
+
+🔴 Pokupka
+➖ 100 000.00 UZS
+💳 ***0907
+📍 XK FAMILY SHOP, TOSHKENT, QORASU 2 MAVZE 15 UY 36 XONADON 
+🕓 02.04.25 11:50
+💵 2 427 792.14 UZS
+
+🟢 OTMENA Pokupka
+➕ 100 000.00 UZS
+💳 ***0907
+📍 XK FAMILY SHOP, UZ
+🕓 02.04.25 11:50
+💵 2 527 792.14 UZS
+
+🔴 Pokupka
+➖ 100 000.00 UZS
+💳 ***0907
+📍 XK FAMILY SHOP, TOSHKENT, QORASU 2 MAVZE 15 UY 36 XONADON 
+🕓 02.04.25 11:51
+💵 2 427 792.14 UZS
+
+🔴 Pokupka
+➖ 83 200.00 UZS
+💳 ***6451
+📍 XK "MAXLAS", tashkent, ul. 1-pr. Ezgulik, 12 
+🕓 02.04.25 13:23
+💵 362 167.71 UZS
+
+🔴 Spisanie c karty
+➖ 50 000.00 UZS
+💳 ***4862
+📍 HAMKORBANK ATB, UZ
+🕓 02.04.25 14:52
+💵 138 715.26 UZS
+
+🟢 Popolnenie scheta
+➕ 2 319 680.00 UZS
+💳 ***5982
+📍 MILLIY BANK PK KIRIM, UZ
+🕓 02.04.25 16:19
+💵 7 098 248.40 UZS
+
+🟢 Popolnenie scheta
+➕ 677 040.00 UZS
+💳 ***0907
+📍 MILLIY BANK PK KIRIM, UZ
+🕓 02.04.25 17:14
+💵 3 104 832.14 UZS
+
+🟢 Popolnenie scheta
+➕ 677 040.00 UZS
+💳 ***5982
+📍 MILLIY BANK PK KIRIM, UZ
+🕓 02.04.25 18:36
+💵 7 775 288.40 UZS
+
+ℹ️ Счет по карте изменен
+💸 2.052.200,14 UZS
+💳 HUMOCARD *6921
+🕘 00:00 01.04.2025
+
+💸 Оплата
+➖ 200.000,00 UZS
+📍 SmartBank P2P HUMO U
+💳 HUMOCARD *6921
+🕓 15:33 02.04.2025
+💰 1.852.200,28 UZS
+
+💸 Оплата
+➖ 200.000,00 UZS
+📍 HAMKOR P2P UZKARD>AN
+💳 HUMOCARD *6921
+🕓 13:10 03.04.2025
+💰 1.652.200,28 UZS
+
+💸 Операция
+➖ 745.800,00 UZS
+📍 HAMKOR HUMO P2P>Andi
+💳 HUMOCARD *6921
+🕓 17:59 03.04.2025
+💰 906.400,28 UZS
+
+💸 Операция
+➖ 745.800,00 UZS
+📍 HAMKOR HUMO P2P>Andi
+💳 HUMOCARD *6921
+🕓 18:02 03.04.2025
+💰 160.600,28 UZS
+
+🎉 Пополнение
+➕ 2.300,00 UZS
+📍 TBC HUMO P2P>TASHKEN
+💳 HUMOCARD *2529
+🕓 10:19 04.04.2025
+💰 4.500,00 UZS
+
+💸 Операция
+➖ 2.300,00 UZS
+📍 TBC HUMO P2P>TASHKEN
+💳 HUMOCARD *6921
+🕓 10:19 04.04.2025
+💰 158.300,28 UZS
+
+Spisanie c karty: UZCARD OTHERS 2 ANY PAYNET, 99,14.04.25 21:52,karta ***4862. summa:351750.00 UZS balans:6532215.26 UZS
+
+E-Com oplata: PAYME OPLATA, UZ,14.04.25 23:11,karta ***4862. summa:40000.00 UZS balans:6492215.26 UZS
+
+Platezh: SHTRAF I GOSUSLUGI, UZ,15.04.25 12:15,karta ***0907. summa:85000.00 UZS balans:3176266.14 UZS
+
+Pokupka: FATH OIL PETROL, 206, KHONChORBOG MFY, MEVAZOR, 2 TOR 15.04.25 12:52 karta ***4862. summa:625000.00 UZS, balans:5867215.26 UZS
+
+HUMOCARD *6714: oplata 40000.00 UZS; PL HUMANS OPLATA>TOS; 25-04-15 15:33;  Dostupno: 407712.00 UZS
+
+HUMOCARD *6921: oplata 8300.28 UZS; OAJ OZBEKTELEKOM AK; 25-04-16 09:27;  Dostupno: 0.00 UZS
+
+HUMOCARD *6714: oplata 130000.00 UZS; NBU ONLINE KONVERSIY; 25-04-16 13:59;  Dostupno: 277712.00 UZS
+
+NBU Card, [14.04.2025 10:30]
+💸 Конверсия
+➖ 37.00 USD
+💳 479091**6905
+🕓 14.04.25 10:29
+💵 0.00 USD
+
+NBU Card, [14.04.2025 10:32]
+💸 Конверсия
+➖ 50.92 USD
+💳 479091**2266
+🕓 14.04.25 10:31
+💵 0.00 USD
+
+NBU Card, [14.04.2025 10:40]
+💸 Конверсия
+➖ 1 100.90 USD
+💳 532154**1744
+🕓 14.04.25 10:39
+💵 1 505.00 USD
+
+CardXabar, [14.04.2025 21:52]
+🔴 Spisanie c karty
+➖ 351 750.00 UZS
+💳 ***4862
+📍 UZCARD OTHERS 2 ANY PAYNET, 99
+🕓 14.04.25 21:52
+💵 6 532 215.26 UZS
+
+CardXabar, [14.04.2025 23:11]
+🔴 E-Com oplata
+➖ 40 000.00 UZS
+💳 ***4862
+📍 PAYME OPLATA, UZ
+🕓 14.04.25 23:11
+💵 6 492 215.26 UZS
+
+CardXabar, [15.04.2025 12:52]
+🔴 Pokupka
+➖ 625 000.00 UZS
+💳 ***4862
+📍 FATH OIL PETROL, 206, KHONChORBOG MFY, MEVAZOR, 2 TOR 
+🕓 15.04.25 12:52
+💵 5 867 215.26 UZS
+
+HUMO Card, [14.04.2025 12:01]
+💸 Оплата
+➖ 10.035.000,00 UZS
+📍 ChakanaPay Humo Uzca
+💳 HUMOCARD *6714
+🕓 12:01 14.04.2025
+💰 3.547.712,00 UZS
+
+HUMO Card, [14.04.2025 12:07]
+💸 Оплата
+➖ 3.000.000,00 UZS
+📍 TENGE24 WS P2P H2UEW
+💳 HUMOCARD *6714
+🕓 12:06 14.04.2025
+💰 547.712,00 UZS
+
+HUMO Card, [14.04.2025 23:02]
+💸 Оплата
+➖ 100.000,00 UZS
+📍 XAZNA PAYNET TOLOV>T
+💳 HUMOCARD *6714
+🕓 23:02 14.04.2025
+💰 447.712,00 UZS
+
+HUMO Card, [15.04.2025 15:34]
+💸 Оплата
+➖ 40.000,00 UZS
+📍 PL HUMANS OPLATA>TOS
+💳 HUMOCARD *6714
+🕓 15:33 15.04.2025
+💰 407.712,00 UZS
+
+🔴 Pokupka
+➖ 44 000.00 UZS
+💳 ***0907
+📍 OOO "AGAT SYSTEM", tashkent, g tashkent  Ul  Gavhar 151 
+🕓 02.04.25 08:37
+💵 2 607 792.14 UZS
+
+🔴 Pokupka
+➖ 80 000.00 UZS
+💳 ***0907
+📍 XK FAMILY SHOP, TOSHKENT, QORASU 2 MAVZE 15 UY 36 XONADON 
+🕓 02.04.25 11:48
+💵 2 527 792.14 UZS
+
+🔴 Pokupka
+➖ 100 000.00 UZS
+💳 ***0907
+📍 XK FAMILY SHOP, TOSHKENT, QORASU 2 MAVZE 15 UY 36 XONADON 
+🕓 02.04.25 11:50
+💵 2 427 792.14 UZS
+
+🟢 OTMENA Pokupka
+➕ 100 000.00 UZS
+💳 ***0907
+📍 XK FAMILY SHOP, UZ
+🕓 02.04.25 11:50
+💵 2 527 792.14 UZS
+
+🔴 Pokupka
+➖ 100 000.00 UZS
+💳 ***0907
+📍 XK FAMILY SHOP, TOSHKENT, QORASU 2 MAVZE 15 UY 36 XONADON 
+🕓 02.04.25 11:51
+💵 2 427 792.14 UZS
+
+🔴 Pokupka
+➖ 83 200.00 UZS
+💳 ***6451
+📍 XK "MAXLAS", tashkent, ul. 1-pr. Ezgulik, 12 
+🕓 02.04.25 13:23
+💵 362 167.71 UZS
+
+🔴 Spisanie c karty
+➖ 50 000.00 UZS
+💳 ***4862
+📍 HAMKORBANK ATB, UZ
+🕓 02.04.25 14:52
+💵 138 715.26 UZS
+
+🟢 Popolnenie scheta
+➕ 2 319 680.00 UZS
+💳 ***5982
+📍 MILLIY BANK PK KIRIM, UZ
+🕓 02.04.25 16:19
+💵 7 098 248.40 UZS
+
+🟢 Popolnenie scheta
+➕ 677 040.00 UZS
+💳 ***0907
+📍 MILLIY BANK PK KIRIM, UZ
+🕓 02.04.25 17:14
+💵 3 104 832.14 UZS
+
+🟢 Popolnenie scheta
+➕ 677 040.00 UZS
+💳 ***5982
+📍 MILLIY BANK PK KIRIM, UZ
+🕓 02.04.25 18:36
+💵 7 775 288.40 UZS
+
+ℹ️ Счет по карте изменен
+💸 2.052.200,14 UZS
+💳 HUMOCARD *6921
+🕘 00:00 01.04.2025
+
+💸 Оплата
+➖ 200.000,00 UZS
+📍 SmartBank P2P HUMO U
+💳 HUMOCARD *6921
+🕓 15:33 02.04.2025
+💰 1.852.200,28 UZS
+
+💸 Оплата
+➖ 200.000,00 UZS
+📍 HAMKOR P2P UZKARD>AN
+💳 HUMOCARD *6921
+🕓 13:10 03.04.2025
+💰 1.652.200,28 UZS
+
+💸 Операция
+➖ 745.800,00 UZS
+📍 HAMKOR HUMO P2P>Andi
+💳 HUMOCARD *6921
+🕓 17:59 03.04.2025
+💰 906.400,28 UZS
+
+💸 Операция
+➖ 745.800,00 UZS
+📍 HAMKOR HUMO P2P>Andi
+💳 HUMOCARD *6921
+🕓 18:02 03.04.2025
+💰 160.600,28 UZS
+
+🎉 Пополнение
+➕ 2.300,00 UZS
+📍 TBC HUMO P2P>TASHKEN
+💳 HUMOCARD *2529
+🕓 10:19 04.04.2025
+💰 4.500,00 UZS
+
+💸 Операция
+➖ 2.300,00 UZS
+📍 TBC HUMO P2P>TASHKEN
+💳 HUMOCARD *6921
+🕓 10:19 04.04.2025
+💰 158.300,28 UZS
+
+ℹ️ Счет по карте изменен
+💸 6.935.000,00 UZS
+💳 HUMO-CARD *6714
+🕘 17:46 04.04.2025
+
+💸 Оплата
+➖ 6.000.000,00 UZS
+📍 NBU P2P HUMO UZCARD>
+💳 HUMOCARD *6714
+🕓 18:46 04.04.2025
+💰 935.000,40 UZS
+
+💸 Оплата
+➖ 400.000,00 UZS
+📍 OQ P2P>TASHKENT
+💳 HUMOCARD *6714
+🕓 12:58 05.04.2025
+💰 535.000,40 UZS
+
+💸 Оплата
+➖ 5.000,40 UZS
+📍 OAJ OZBEKTELEKOM AK
+💳 HUMOCARD *6714
+🕓 17:39 05.04.2025
+💰 530.000,00 UZS
+
+💸 Оплата
+➖ 200.000,00 UZS
+📍 SQB MOBILE HUMO P2P
+💳 HUMOCARD *6714
+🕓 13:18 06.04.2025
+💰 330.000,00 UZS
+
+🎉 Пополнение
+➕ 11.488.000,00 UZS
+📍 ELEKSIR S03 T19 SHL
+💳 HUMOCARD *6714
+🕓 23:00 06.04.2025
+💰 11.818.000,00 UZS
+
+Pokupka: OOO "AGAT SYSTEM", tashkent, g tashkent Ul Gavhar 151 02.04.25 08:37 karta ***0907. summa:44000.00 UZS, balans:2607792.14 UZS
+
+Pokupka: XK FAMILY SHOP, TOSHKENT, QORASU 2 MAVZE 15 UY 36 XONADON 02.04.25 11:48 karta ***0907. summa:80000.00 UZS, balans:2527792.14 UZS
+
+OTMENA Pokupka: XK FAMILY SHOP, UZ,02.04.25 11:50,karta ***0907. summa:100000.00 UZS balans:2527792.14 UZS
+
+Pokupka: XK FAMILY SHOP, TOSHKENT, QORASU 2 MAVZE 15 UY 36 XONADON 02.04.25 11:51 karta ***0907. summa:100000.00 UZS, balans:2427792.14 UZS
+
+Pokupka: XK FAMILY SHOP, TOSHKENT, QORASU 2 MAVZE 15 UY 36 XONADON 02.04.25 11:50 karta ***0907. summa:100000.00 UZS, balans:2427792.14 UZS
+
+Spisanie c karty: HAMKORBANK ATB, UZ,02.04.25 14:52,karta ***4862. summa:50000.00 UZS balans:138715.26 UZS
+
+Popolnenie scheta: MILLIY BANK PK KIRIM, UZ,02.04.25 16:19,karta ***5982. summa:2319680.00 UZS balans:7098248.40 UZS
+
+Popolnenie scheta: MILLIY BANK PK KIRIM, UZ,02.04.25 17:14,karta ***0907. summa:677040.00 UZS balans:3104832.14 UZS
+
+Popolnenie scheta: MILLIY BANK PK KIRIM, UZ,02.04.25 18:36,karta ***5982. summa:677040.00 UZS balans:7775288.40 UZS
+
+Schet po karte HUMOCARD *6921 izmenen na summu 2052200.14 UZS. 01-APR-2025 00:00
+
+HUMOCARD *6921: oplata 200000.00 UZS; SmartBank P2P HUMO U; 25-04-02 15:33;  Dostupno: 1852200.28 UZS
+
+HUMOCARD *6921: oplata 200000.00 UZS; HAMKOR P2P UZKARD>AN; 25-04-03 13:10;  Dostupno: 1652200.28 UZS
+
+HUMOCARD *6921: operacija 745800.00 UZS; HAMKOR HUMO P2P>Andi; 25-04-03 17:59;  Dostupno: 906400.28 UZS
+
+HUMOCARD *6921: operacija 745800.00 UZS; HAMKOR HUMO P2P>Andi; 25-04-03 18:02;  Dostupno: 160600.28 UZS
+
+HUMOCARD *6921: operacija 2300.00 UZS; TBC HUMO P2P>TASHKEN; 25-04-04 10:19;  Dostupno: 158300.28 UZS
+
+HUMOCARD *2529: popolnenie 2300.00 UZS; TBC HUMO P2P>TASHKEN; 25-04-04 10:19;  Dostupno: 4500.00 UZS
+
+Schet po karte HUMO-CARD *6714 izmenen na summu 6935000.00 UZS. 04-APR-2025 17:46
+
+HUMOCARD *6714: oplata 6000000.00 UZS; NBU P2P HUMO UZCARD>; 25-04-04 18:46;  Dostupno: 935000.40 UZS
+
+HUMOCARD *6714: oplata 400000.00 UZS; OQ P2P>TASHKENT; 25-04-05 12:58;  Dostupno: 535000.40 UZS
+
+HUMOCARD *6714: oplata 5000.40 UZS; OAJ OZBEKTELEKOM AK; 25-04-05 17:39;  Dostupno: 530000.00 UZS
+
+HUMOCARD *6714: oplata 200000.00 UZS; SQB MOBILE HUMO P2P; 25-04-06 13:18;  Dostupno: 330000.00 UZS
+
+HUMOCARD *6714: popolnenie 11488000.00 UZS; ELEKSIR S03 T19 SHL; 25-04-06 23:00;  Dostupno: 11818000.00 UZS
