@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { transactionsApi, Transaction } from '../services/api';
 import { db } from '../storage/db';
 
@@ -15,6 +15,15 @@ export const useOfflineTransactions = () => {
     const [isOfflineReady, setIsOfflineReady] = useState(false);
     const [syncProgress, setSyncProgress] = useState<SyncProgress>({ downloaded: 0, pages: 0, status: 'idle' });
     const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
+    const retryDelayRef = useRef<number>(5 * 60 * 1000); // 5 minutes
+
+    const sortTransactions = useCallback((items: Transaction[]) => {
+        return [...items].sort((a, b) => {
+            const at = a.transaction_date ? new Date(a.transaction_date).getTime() : 0;
+            const bt = b.transaction_date ? new Date(b.transaction_date).getTime() : 0;
+            return at - bt;
+        });
+    }, []);
 
     const loadTransactions = useCallback(async () => {
         setIsLoading(true);
@@ -24,7 +33,8 @@ export const useOfflineTransactions = () => {
                 db.meta.get('lastSyncAt'),
                 db.meta.get('version'),
             ]);
-            setData(items);
+            const sorted = sortTransactions(items);
+            setData(sorted);
             setIsOfflineReady(items.length > 0);
             setLastSyncAt(meta?.value ?? null);
             if (!versionEntry?.value) {
@@ -42,9 +52,9 @@ export const useOfflineTransactions = () => {
         }
     }, []);
 
-    const syncFromServer = useCallback(async () => {
+    const syncFromServer = useCallback(async (background = false) => {
         setSyncProgress({ downloaded: 0, pages: 0, status: 'running' });
-        setIsLoading(true);
+        if (!background) setIsLoading(true);
         try {
             const pageSize = 1000;
             let page = 1;
@@ -55,7 +65,7 @@ export const useOfflineTransactions = () => {
                     page,
                     page_size: pageSize,
                     sort_by: 'transaction_date',
-                    sort_dir: 'desc',
+                    sort_dir: 'asc',
                 });
                 const items = response.items || [];
                 if (!items.length) break;
@@ -71,10 +81,12 @@ export const useOfflineTransactions = () => {
                 page += 1;
             }
 
+            const sortedFetched = sortTransactions(fetched);
+
             await db.transaction('rw', db.transactions, db.meta, async () => {
                 await db.transactions.clear();
-                if (fetched.length) {
-                    await db.transactions.bulkPut(fetched);
+                if (sortedFetched.length) {
+                    await db.transactions.bulkPut(sortedFetched);
                 }
                 const now = new Date().toISOString();
                 await db.meta.put({ key: 'lastSyncAt', value: now });
@@ -82,16 +94,18 @@ export const useOfflineTransactions = () => {
                 await db.meta.put({ key: 'version', value: META_VERSION });
             });
 
-            setData(fetched);
-            setIsOfflineReady(fetched.length > 0);
+            setData(sortedFetched);
+            setIsOfflineReady(sortedFetched.length > 0);
             setSyncProgress((prev) => ({ ...prev, status: 'done' }));
+            retryDelayRef.current = 5 * 60 * 1000;
         } catch (error) {
             console.error('Failed to sync from server', error);
             setSyncProgress((prev) => ({ ...prev, status: 'error' }));
+            retryDelayRef.current = Math.min(retryDelayRef.current * 2, 30 * 60 * 1000);
         } finally {
-            setIsLoading(false);
+            if (!background) setIsLoading(false);
         }
-    }, []);
+    }, [sortTransactions]);
 
     const upsertTransactions = useCallback(async (transactions: Transaction | Transaction[]) => {
         const list = Array.isArray(transactions) ? transactions : [transactions];
@@ -103,9 +117,9 @@ export const useOfflineTransactions = () => {
                 const existing = map.get(tx.id) || {};
                 map.set(tx.id, { ...existing, ...tx });
             });
-            return Array.from(map.values());
+            return sortTransactions(Array.from(map.values()));
         });
-    }, []);
+    }, [sortTransactions]);
 
     const updateTransactionFields = useCallback(async (updates: Array<{ id: number; fields: Record<string, any> }>) => {
         if (!updates.length) return;
@@ -118,12 +132,14 @@ export const useOfflineTransactions = () => {
             }
         });
         setData((prev) =>
-            prev.map((tx) => {
-                const update = updates.find((u) => u.id === tx.id);
-                return update ? { ...tx, ...update.fields } : tx;
-            })
+            sortTransactions(
+                prev.map((tx) => {
+                    const update = updates.find((u) => u.id === tx.id);
+                    return update ? { ...tx, ...update.fields } : tx;
+                })
+            )
         );
-    }, []);
+    }, [sortTransactions]);
 
     const removeTransactions = useCallback(async (ids: number[]) => {
         if (!ids.length) return;
@@ -135,8 +151,11 @@ export const useOfflineTransactions = () => {
         let cancelled = false;
         const init = async () => {
             const items = await loadTransactions();
-            if (!cancelled && items.length === 0) {
-                await syncFromServer();
+            if (cancelled) return;
+            if (items.length === 0) {
+                await syncFromServer(false);
+            } else {
+                syncFromServer(true);
             }
         };
         init();
@@ -144,6 +163,13 @@ export const useOfflineTransactions = () => {
             cancelled = true;
         };
     }, [loadTransactions, syncFromServer]);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            syncFromServer(true);
+        }, retryDelayRef.current);
+        return () => clearInterval(interval);
+    }, [syncFromServer]);
 
     return {
         data,
